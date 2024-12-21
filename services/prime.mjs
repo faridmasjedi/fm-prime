@@ -7,7 +7,7 @@ import {
   isDivisibleBy2,
   isDivisibleBy3,
   isDivisibleBy6,
-  findMax
+  findMax,
 } from "./mathOperation.mjs";
 
 import {
@@ -16,41 +16,42 @@ import {
   writeFileSync as fsWriteFileSync,
 } from "fs";
 
+// Create output folder
 const createOutputFolder = (number) => {
   const rootFolder = "./output-big";
-  if (!fsExistsSync(rootFolder)) {
-    fsMkdirSync(rootFolder, { recursive: true });
-  }
+  if (!fsExistsSync(rootFolder)) fsMkdirSync(rootFolder, { recursive: true });
 
   const dir = `./output-big/output-${number}`;
   if (!fsExistsSync(dir)) {
     fsMkdirSync(dir, { recursive: true });
     return dir;
-  } else {
-    throw new Error(`\n-----------\n${dir} already exists!\n---------------\n`);
   }
+  throw new Error(`\n-----------\n${dir} already exists!\n---------------\n`);
 };
 
+// Generate partitions for range-based operations
 const generatePartitions = (limit, range) => {
   if (range <= 0) throw new Error("Range must be greater than 0.");
-  return Array.from({ length: Math.ceil(+limit / range) }, (_, i) => i * range);
+  return Array.from({ length: Math.ceil(+limit / range) }, (_, i) =>
+    multiplyNumbers(i.toString(), range.toString())
+  );
 };
 
+// Check if a candidate is a divisor of a number
 const isDivisor = (number, candidate) => {
-  return number !== candidate && divideNumbers(number, candidate)[1] === "0";
+  return divideNumbers(number, candidate)[1] === "0" && number !== candidate;
 };
 
+// Find a prime factor of a number
 const findPrimeFactor = (num, factor) => {
   if (isDivisor(num, factor)) return factor;
   const nextFactor = addNumbers(factor, "2");
   return isDivisor(num, nextFactor) ? nextFactor : -1;
 };
 
+// Check if a number is prime
 const isPrime = (number, partition = "1") => {
-  if (number === "2" || number === "3") {
-    return true;
-  }
-
+  if (number === "2" || number === "3") return true;
   if (
     number === "1" ||
     isDivisibleBy2(number) ||
@@ -66,7 +67,6 @@ const isPrime = (number, partition = "1") => {
     divideNumbers(sqrtLimit, partition)[1],
     "1"
   );
-
   const partitions = generatePartitions(sqrtLimit, partitionRange);
 
   for (const partition of partitions) {
@@ -76,6 +76,7 @@ const isPrime = (number, partition = "1") => {
         multiplyNumbers("6", addNumbers(k.toString(), partition.toString()))
       );
       const nextCandidate = addNumbers(candidate, "2");
+
       if (isDivisor(number, candidate) || isDivisor(number, nextCandidate)) {
         return false;
       }
@@ -85,6 +86,7 @@ const isPrime = (number, partition = "1") => {
   return true;
 };
 
+// Calculate all divisors of a number
 const calculateDivisors = (num) => {
   const divisors = ["1"];
   while (num !== "1") {
@@ -97,7 +99,7 @@ const calculateDivisors = (num) => {
     let currentDivisor = "2";
     const sqrtNum = sqrtFloor(num);
 
-    while (currentDivisor <= sqrtNum) {
+    while (findMax(currentDivisor, sqrtNum) !== currentDivisor) {
       if (isDivisor(num, currentDivisor)) {
         divisors.push(currentDivisor);
         num = divideNumbers(num, currentDivisor)[0];
@@ -115,11 +117,13 @@ const calculateDivisors = (num) => {
   return divisors.sort((a, b) => +a - +b);
 };
 
+// Write data to a file
 const writeDataToFile = (folderName, pageIndex, data) => {
   const filePath = `${folderName}/Output${pageIndex}.txt`;
   fsWriteFileSync(filePath, data, { flag: "a" });
 };
 
+// Generate all primes up to a number
 const generatePrimesUpTo = (number) => {
   const startTime = Date.now();
   let pageIndex = 0;
@@ -128,14 +132,15 @@ const generatePrimesUpTo = (number) => {
   let dataBuffer = "";
 
   let current = "2";
-  while ( findMax(current, number) !== current ) {
+  while (findMax(current, number) !== current) {
     if (isPrime(current)) {
       if (count % 9000 === 0 && count !== 0) {
         writeDataToFile(folderName, pageIndex, dataBuffer);
         dataBuffer = "";
         pageIndex++;
       }
-      dataBuffer += count % 20 === 0 ? `\n(${count}) | ${current},` : `${current},`;
+      dataBuffer +=
+        count % 20 === 0 ? `\n(${count}) | ${current},` : `${current},`;
       count++;
     }
     current = addNumbers(current, "1");
@@ -152,10 +157,10 @@ const generatePrimesUpTo = (number) => {
   return count;
 };
 
+// Generate primes within a range
 const generatePrimesInRange = (start, end) => {
   const primesInRange = [];
   let current = start;
-
   while (findMax(current, end) !== current) {
     if (isPrime(current)) {
       primesInRange.push(current);
@@ -165,6 +170,7 @@ const generatePrimesInRange = (start, end) => {
   return primesInRange;
 };
 
+// Write primes to file for a range
 const writePrimesToFile = (start, end, folderName) => {
   const primesInRange = generatePrimesInRange(start, end);
   const dataBuffer = primesInRange.join(", ");
