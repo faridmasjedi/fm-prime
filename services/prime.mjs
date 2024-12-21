@@ -14,7 +14,11 @@ import {
   existsSync as fsExistsSync,
   mkdirSync as fsMkdirSync,
   writeFileSync as fsWriteFileSync,
+  readdirSync as fsReadDirSync, 
+  readFileSync as fsReadFileSync
 } from "fs";
+
+import { execSync } from "child_process";
 
 // Create output folder
 const createOutputFolder = (number) => {
@@ -98,8 +102,7 @@ const calculateDivisors = (num) => {
     let divisorFound = false;
     let currentDivisor = "2";
     const sqrtNum = sqrtFloor(num);
-
-    while (findMax(currentDivisor, sqrtNum) !== currentDivisor) {
+    while (findMax(currentDivisor, sqrtNum) !== currentDivisor || currentDivisor === sqrtNum) {
       if (isDivisor(num, currentDivisor)) {
         divisors.push(currentDivisor);
         num = divideNumbers(num, currentDivisor)[0];
@@ -118,8 +121,8 @@ const calculateDivisors = (num) => {
 };
 
 // Write data to a file
-const writeDataToFile = (folderName, pageIndex, data) => {
-  const filePath = `${folderName}/Output${pageIndex}.txt`;
+const writeDataToFile = (folderName, filename, data) => {
+  const filePath = ('' + filename).includes('Output') ? `${folderName}/${filename}` : `${folderName}/Output${filename}.txt`;
   fsWriteFileSync(filePath, data, { flag: "a" });
 };
 
@@ -130,9 +133,9 @@ const generatePrimesUpTo = (number) => {
   const folderName = createOutputFolder(number);
   let count = 0;
   let dataBuffer = "";
-
   let current = "2";
-  while (findMax(current, number) !== current) {
+
+  while (findMax(current, number) !== current || current === number) {
     if (isPrime(current)) {
       if (count % 9000 === 0 && count !== 0) {
         writeDataToFile(folderName, pageIndex, dataBuffer);
@@ -146,9 +149,7 @@ const generatePrimesUpTo = (number) => {
     current = addNumbers(current, "1");
   }
 
-  if (dataBuffer) {
-    writeDataToFile(folderName, pageIndex, dataBuffer);
-  }
+  writeDataToFile(folderName, pageIndex, dataBuffer + `\n(${count})`);
 
   const finishTime = Date.now();
   console.log(
@@ -161,7 +162,7 @@ const generatePrimesUpTo = (number) => {
 const generatePrimesInRange = (start, end) => {
   const primesInRange = [];
   let current = start;
-  while (findMax(current, end) !== current) {
+  while (findMax(current, end) !== current || current === end) {
     if (isPrime(current)) {
       primesInRange.push(current);
     }
@@ -221,6 +222,204 @@ const isIsolatedPrime = (number) => {
     : `${number} is prime, but not an isolated one.`;
 };
 
+// Retrieve all files/directories from a specified source
+const getAllFromDirectory = (source) => fsReadDirSync(source);
+
+// Find the appropriate folder for a given number
+const findMatchingFolder = (source, number) => {
+  const outputs = getAllFromDirectory(source);
+
+  const result = outputs.find((output) => {
+    const folderNumber = output.split("-")[1];
+    return findMax(folderNumber, number) !== number;
+  });
+
+  if (result) {
+    return `${source}/${result}`;
+  }
+
+  return `\n${number} is larger than the available outputs.\nUse isPrime method.`;
+};
+
+// Find the appropriate file within a folder for a given number
+const findMatchingFile = (folder, number) => {
+  const files = getAllFromDirectory(folder);
+
+  const matchingFile = files.find((file) => {
+    const data = fsReadFileSync(`${folder}/${file}`, "utf-8");
+    const primes = data.split("|").flatMap((chunk) => chunk.split(","));
+    const firstPrime = primes[1]?.trim() || "";
+    const lastPrime = primes[primes.length - 2]?.trim() || "";
+
+    const withinRange =
+      findMax(firstPrime, number) === number &&
+      findMax(lastPrime, number) === lastPrime;
+
+    return withinRange;
+  });
+
+  return matchingFile ? `${folder}/${matchingFile}` : null;
+};
+
+// Check if a number is prime using available files or fallback methods
+const isPrimeUsingFiles = (number, source = "./output-big") => {
+  const folder = findMatchingFolder(source, number);
+
+  if (typeof folder === "string" && folder.includes("is larger")) {
+    return folder;
+  }
+
+  const file = findMatchingFile(folder, number);
+
+  if (file) {
+    const data = fsReadFileSync(file, "utf-8").replace(/\n.*\| /g, "");
+    const primes = data.split(",");
+    return primes.includes(number) ? true : false;
+  }
+
+  // Fallback to direct prime checking if no matching file is found
+  return isPrime(number);
+};
+
+// Main function to check if a number is prime and return detailed output
+const checkAndExplainPrimeStatus = (number, source = "./output-big") => {
+  const isPrimeNumber = isPrimeUsingFiles(number, source);
+
+  if (typeof isPrimeNumber !== "boolean") return isPrimeNumber // Message from `findMatchingFolder` if folder not found
+  if (isPrimeNumber === true) return `\n------\n${number} is a prime number.\n------\n`;
+  
+  const divisors = calculateDivisors(number);
+  return `\n------\n${number} is not a prime number.\n\nIt has these divisors: ${divisors.join(
+    ", "
+  )}\n------\n`;
+  
+};
+
+// Copy specified files from one folder to another
+const copyFilesToFolder = (sourceFolder, targetFolder, files) => {
+  files.forEach((file) => {
+    const data = fsReadFileSync(`${sourceFolder}/${file}`, "utf-8");
+    writeDataToFile(targetFolder, file, data);
+  });
+};
+
+// Parse and sort files based on numerical suffix in their names
+const parseAndSortFiles = (files) =>
+  files.map((file) => ({
+    name: file,
+    number: parseInt(file.split("Output")[1], 10) || 0,
+  }))
+    .sort((a, b) => a.number - b.number)
+    .map((file) => file.name);
+
+// Extract data from the last file and filter based on the target number
+const filterLastFileData = (filePath, targetNumber) => {
+  const data = fsReadFileSync(filePath, "utf-8")
+    .replace(/\n.*\| /g, "")
+    .split(",");
+
+  let count = 0;
+  const filteredData = [];
+  for (const item of data) {
+    if (findMax(item, targetNumber) === targetNumber || item === targetNumber) {
+      filteredData.push(
+        count % 20 === 0 ? `\n(${count}) | ${item},` : `${item},`
+      );
+      count++;
+    } else {
+      break;
+    }
+  }
+  return filteredData.join("");
+};
+
+// Copy prime data from source to target folder
+const copyPrimeDataToTarget = (
+  sourceFolder,
+  folderNumber,
+  targetNumber,
+  getDirsFunc,
+  fileToSearch
+) => {
+  if (folderNumber === targetNumber) {
+    return `Output for ${targetNumber} already exists.`;
+  }
+
+  const targetFolder = createOutputFolder(targetNumber);
+  const files = parseAndSortFiles(getDirsFunc(sourceFolder));
+
+  const fileIndex = files.indexOf(fileToSearch.split(`${sourceFolder}/`)[1]);
+  if (fileIndex === -1) throw new Error(`File ${fileToSearch} not found.`);
+
+  const filesToCopy = files.slice(0, fileIndex);
+  copyFilesToFolder(sourceFolder, targetFolder, filesToCopy);
+
+  const dataBuffer = filterLastFileData(fileToSearch, targetNumber);
+  writeDataToFile(targetFolder, files[fileIndex], dataBuffer);
+};
+
+// Find the largest output folder by number
+const findLargestOutputFolder = (source, getDirsFunc) => {
+  const outputs = getDirsFunc(source);
+  return outputs.reduce((largest, current) => {
+    const largestNum = parseInt(largest.split("-")[1] || "0", 10);
+    const currentNum = parseInt(current.split("-")[1] || "0", 10);
+    return currentNum > largestNum ? current : largest;
+  }, outputs[0]);
+};
+
+const copySelectedFiles = (sourceFolder, targetFolder, files, num) => {
+  const selectedFiles = files.filter(file => {
+    const data = fsReadFileSync(
+      `${sourceFolder}/${file}`,
+      "utf-8"
+    )
+    const firstData = data.split("| ")[1].split(',')[0]
+    return findMax(firstData, num) === num 
+  })
+  
+  selectedFiles.slice(0,-1).forEach(f => execSync(`cp -r ${sourceFolder}/${f} ${targetFolder}/${f}`) )
+  return selectedFiles[selectedFiles.length - 1];
+}
+
+const dataFromSelectedFile = (sourceFolder, selectedFile, num) => {
+  const lastFileData = fsReadFileSync(
+    `${sourceFolder}/${selectedFile}`,
+    "utf-8"
+  )
+    .replace(/\n.*\| /g, "")
+    .split(",");
+  
+  return lastFileData.filter((item) => (findMax(item, num) !== item) || item === num).join(", ");
+ 
+}
+
+// Copy all prime outputs from the largest folder
+const copyAllPrimeOutputs = (sourceFolder, num, getDirsFunc) => {  
+  const files = parseAndSortFiles(getDirsFunc(sourceFolder));
+  const targetFolder = createOutputFolder(num);
+  const selectedFile = copySelectedFiles(sourceFolder,targetFolder, files, num);
+  console.log('selectedFile:', selectedFile)
+  const lastFilteredData = dataFromSelectedFile(sourceFolder, selectedFile, num)
+  return { lastFilteredData, folder: targetFolder, targetFileName: selectedFile };
+};
+
+// Generate prime output from existing text files
+const generatePrimeOutputFromText = (num, getDirsFunc = getAllFromDirectory) => {
+  const source = "./output-big";
+  const largestOutput = findLargestOutputFolder(source, getDirsFunc);
+  const sourceFolder = `${source}/${largestOutput}`;
+  const folderNumber = largestOutput.split("-")[1];
+  if (folderNumber === num) {
+    return `Output for ${num} already exists.`;
+  }
+
+  const { lastFilteredData, folder, targetFileName } = copyAllPrimeOutputs(sourceFolder, num, getDirsFunc);
+
+  writeDataToFile(folder, targetFileName, lastFilteredData);
+};
+
+
 export {
   createOutputFolder,
   generatePartitions,
@@ -235,4 +434,17 @@ export {
   isSophiePrime,
   isTwinPrime,
   isIsolatedPrime,
+  generatePrimeOutputFromText,
+  getAllFromDirectory,
+  findMatchingFolder,
+  findMatchingFile,
+  isPrimeUsingFiles,
+  copyFilesToFolder,
+  parseAndSortFiles,
+  filterLastFileData,
+  copyPrimeDataToTarget,
+  findLargestOutputFolder,
+  copySelectedFiles,
+  dataFromSelectedFile,
+  copyAllPrimeOutputs
 };
