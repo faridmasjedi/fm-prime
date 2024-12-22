@@ -242,11 +242,15 @@ const findMatchingFolder = (source, number) => {
     return findMax(folderNumber, number) !== number;
   });
 
-  if (result) {
-    return `${source}/${result}`;
-  }
+  return result ? `${source}/${result}` : `\n${number} is larger than the available outputs.\nUse isPrime method.`;
+};
 
-  return `\n${number} is larger than the available outputs.\nUse isPrime method.`;
+
+const primesInFile = (filePath) => {
+  const data = fsReadFileSync(filePath, "utf-8")
+    .replace(/\n.*\| /g, "")
+    .split(",");
+  return data;
 };
 
 // Find the appropriate file within a folder for a given number
@@ -257,15 +261,13 @@ const findMatchingFile = (folder, number) => {
       .sort((a, b) => parseInt(a.split("Output")[1]) - parseInt(b.split("Output")[1]));
 
   const matchingFile = sortedFiles.find((file) => {
-    const data = fsReadFileSync(`${folder}/${file}`, "utf-8");
-    const primes = data.split("|").flatMap((chunk) => chunk.split(","));
+    const primes = primesInFile(`${folder}/${file}`);
     const firstPrime = primes[1]?.trim() || "";
     const lastPrime = primes[primes.length - 2]?.trim() || "";
-    const withinRange =
+    return (
       findMax(firstPrime, number) === number &&
-      findMax(lastPrime, number) === lastPrime;
-
-    return withinRange;
+      findMax(lastPrime, number) === lastPrime
+    );
   });
 
   return matchingFile ? `${folder}/${matchingFile}` : null;
@@ -324,9 +326,7 @@ const parseAndSortFiles = (files) =>
 
 // Extract data from the last file and filter based on the target number
 const filterLastFileData = (filePath, targetNumber) => {
-  const data = fsReadFileSync(filePath, "utf-8")
-    .replace(/\n.*\| /g, "")
-    .split(",");
+  const data = primesInFile(filePath)
 
   let count = 0;
   const filteredData = [];
@@ -449,6 +449,87 @@ const generatePrimeOutputFromText = (
   );
 
   writeDataToFile(folder, targetFileName, lastFilteredData);
+};
+
+const checkPrimeInFile = (num) => {
+  const folder = findMatchingFolder("./output-big", num);
+  if (folder.includes('is larger than')) return false;
+
+  const files = parseAndSortFiles(getAllFromDirectory(folder));
+  for(const file of files){
+    const fileData = fsReadFileSync(
+      `${folder}/${file}`,
+      "utf-8"
+    )
+    const pattern1 = `| ${num},`
+    const pattern2 = `,${num},`
+    if (fileData.includes(pattern1) || fileData.includes(pattern2)) {
+      console.log(`${num} is prime ---> ref: ${folder}/${file}`)
+      return true
+    }
+  }
+  return false
+}
+
+const checkDivisorsFromFiles = (num, folder, divisors = []) => {
+  if(checkPrimeInFile(num)){
+    divisors.push(num);
+    return divisors;
+  }
+  const files = parseAndSortFiles(getAllFromDirectory(folder));
+  for (const file of files) {
+    const primes = primesInFile(`${folder}/${file}`);
+    const divisor = primes.find((prime) => divideNumbers(num, prime)[1] === "0");
+
+    if (divisor) {
+      divisors.push(divisor);
+      const reducedNum = divideNumbers(num, divisor)[0];
+      return checkDivisorsFromFiles(reducedNum, folder, divisors);
+    }
+  }
+};
+
+const checkDivisorFromFiles = (num, folder) => {
+  if(checkPrimeInFile(num)){
+    return false
+  }
+
+  const files = parseAndSortFiles(getAllFromDirectory(folder));
+  for (const file of files) {
+    const primes = primesInFile(`${folder}/${file}`);
+    const divisor = primes.find((prime) => divideNumbers(num, prime)[1] === "0");
+
+    if (divisor) {
+      console.log(`${num} is dividable by ${divisor}`)
+      return true
+    }
+  }
+};
+
+const calculateDivisorsUsingText = (num) => {
+  const folder = findMatchingFolder("./output-big", sqrtFloor(num));
+  if (!folder) return `No suitable folder found for number ${num}`;
+  const divisors = checkDivisorsFromFiles(num, folder);
+  divisors.unshift("1")
+  return divisors;
+};
+
+const generateScientificRepresentation = (divisors) => {
+  const counts = divisors.reduce((acc, val) => {
+    acc[val] = (acc[val] || 0) + 1;
+    return acc;
+  }, {});
+
+  return Object.entries(counts)
+    .map(([key, count]) => count === 1 ? `${key}` : `${key}**${count}`)
+    .join(" * ");
+};
+
+const isPrimeFromText = (num) => {
+  const folder = findMatchingFolder("./output-big", sqrtFloor(num));
+  if (!folder) return `No suitable folder found for number ${num}`;
+  const divisorFlag = checkDivisorFromFiles(num, folder);
+  return `${num} is${divisorFlag ? ' not':''} a prime number.` 
 };
 
 export {
