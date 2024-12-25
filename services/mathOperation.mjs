@@ -8,7 +8,7 @@ const numberToSlots = (num) => {
     result[num.length - i - 1] = num[i];
   }
   return result;
-}
+};
 
 // Calculate the sum of digits in a number string
 const calculateDigitSum = (num) => {
@@ -16,7 +16,7 @@ const calculateDigitSum = (num) => {
     return "Input should be a string.";
   }
   return [...num].reduce((sum, digit) => sum + +digit, 0);
-}
+};
 
 // Check divisibility by 2
 const isDivisibleBy2 = (num) => {
@@ -24,7 +24,7 @@ const isDivisibleBy2 = (num) => {
     return "Input should be a string.";
   }
   return +num[num.length - 1] % 2 === 0;
-}
+};
 
 // Check divisibility by 3
 const isDivisibleBy3 = (num) => {
@@ -32,7 +32,7 @@ const isDivisibleBy3 = (num) => {
     return "Input should be a string.";
   }
   return calculateDigitSum(num) % 3 === 0;
-}
+};
 
 // Check divisibility by 5
 const isDivisibleBy5 = (num) => {
@@ -41,7 +41,7 @@ const isDivisibleBy5 = (num) => {
   }
   const lastDigit = num[num.length - 1];
   return lastDigit === "0" || lastDigit === "5";
-}
+};
 
 // Check divisibility by 6
 const isDivisibleBy6 = (num) => {
@@ -49,7 +49,7 @@ const isDivisibleBy6 = (num) => {
     return "Input should be a string.";
   }
   return isDivisibleBy2(num) && isDivisibleBy3(num);
-}
+};
 
 // Find the maximum of two number strings
 const findMax = (num1, num2) => {
@@ -60,12 +60,12 @@ const findMax = (num1, num2) => {
     return num1.length > num2.length ? num1 : num2;
   }
   return num1 > num2 ? num1 : num2;
-}
+};
 
 // Find the minimum of two number strings
 const findMin = (num1, num2) => {
   return findMax(num1, num2) === num1 ? num2 : num1;
-}
+};
 
 // Add two number strings
 const addNumbers = (num1, num2) => {
@@ -89,7 +89,7 @@ const addNumbers = (num1, num2) => {
   }
   if (carry) result = carry + result;
   return result;
-}
+};
 
 // Subtract two number strings
 const subtractNumbers = (num1, num2) => {
@@ -122,7 +122,7 @@ const subtractNumbers = (num1, num2) => {
   }
 
   return (isNegative ? "-" : "") + result.replace(/^0+/, "");
-}
+};
 
 // Multiply a number string by a single digit
 const multiplyByDigit = (num, digit) => {
@@ -140,7 +140,7 @@ const multiplyByDigit = (num, digit) => {
 
   if (carry) result = carry + result;
   return result;
-}
+};
 
 // Multiply two number strings
 const multiplyNumbers = (num1, num2) => {
@@ -156,7 +156,7 @@ const multiplyNumbers = (num1, num2) => {
   }
 
   return result;
-}
+};
 
 // Division returning quotient and remainder
 const divideNumbers = (num1, num2) => {
@@ -182,7 +182,7 @@ const divideNumbers = (num1, num2) => {
   }
 
   return [quotient.replace(/^0+/, "") || "0", remainder];
-}
+};
 
 // Calculate square root floor of a number string
 const sqrtFloor = (num) => {
@@ -192,14 +192,13 @@ const sqrtFloor = (num) => {
 
   let low = "0";
   let high = num;
-  let mid;
   let ans = "0";
 
-  while (findMax(low, high) !== low) {
-    mid = divideNumbers(addNumbers(low, high), "2")[0];
+  while (findMax(low, high) !== low || low === high) {
+    const mid = divideNumbers(addNumbers(low, high), "2")[0];
     const square = multiplyNumbers(mid, mid);
 
-    if (findMax(square, num) === num) {
+    if (findMax(square, num) === num || square === num) {
       ans = mid;
       low = addNumbers(mid, "1");
     } else {
@@ -208,7 +207,7 @@ const sqrtFloor = (num) => {
   }
 
   return ans;
-}
+};
 
 // Power of a number string
 const power = (num, exp) => {
@@ -223,22 +222,22 @@ const power = (num, exp) => {
   }
 
   return result;
-}
+};
 
 export {
-    numberToSlots,
-    calculateDigitSum,
-    isDivisibleBy2,
-    isDivisibleBy3,
-    isDivisibleBy5,
-    isDivisibleBy6,
-    findMax,
-    findMin,
-    addNumbers,
-    subtractNumbers,
-    multiplyByDigit,
-    multiplyNumbers,
-    divideNumbers,
-    sqrtFloor,
-    power
+  numberToSlots,
+  calculateDigitSum,
+  isDivisibleBy2,
+  isDivisibleBy3,
+  isDivisibleBy5,
+  isDivisibleBy6,
+  findMax,
+  findMin,
+  addNumbers,
+  subtractNumbers,
+  multiplyByDigit,
+  multiplyNumbers,
+  divideNumbers,
+  sqrtFloor,
+  power,
 };
