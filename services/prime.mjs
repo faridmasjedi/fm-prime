@@ -791,9 +791,102 @@ const isPrimeFromTextFilesRecursive = (num) => {
       addNumbers(lastNumber, "1")
     )
   ) {
-    return `${num} is a prime number.`;
+    return true;
   }
   return isPrimeFromTextFilesRecursive(sqrtNum);
+};
+
+/////
+
+const generatePrimesUpToRecursive = (
+  number,
+  current = "2",
+  dataBuffer = "",
+  count = 0,
+  pageIndex = 0
+) => {
+  let checkFolderName = numFolderExist(number);
+  if (checkFolderName) return;
+  const folderName = createOutputFolder(number);
+  while (findMax(current, number) !== current || current === number) {
+    if (isPrimeFromTextFilesRecursive(current)) {
+      console.log("current prime:", current);
+      if (count % 1000000 === 0 && count !== 0) {
+        if (!dataBuffer.includes(`(${count})`)) dataBuffer += `\n(${count})`;
+        writeDataToFile(folderName, pageIndex, dataBuffer);
+        dataBuffer = "";
+        pageIndex++;
+      }
+      dataBuffer +=
+        count % 20 === 0 ? `\n(${count}) | ${current},` : `${current},`;
+      count++;
+    }
+    current = addNumbers(current, "1");
+  }
+
+  writeDataToFile(folderName, pageIndex, dataBuffer + `\n(${count})`);
+  return count;
+};
+
+const formatLastFileInLastFolderRecursive = (
+  sourceFolder,
+  lastFile,
+  lastNumber,
+  sqrtNum
+) => {
+  const fileLines = fsReadFileSync(
+    `${sourceFolder}/${lastFile}`,
+    "utf-8"
+  ).split("\n");
+  const lastCount = fileLines.pop().replace("(", "").replace(")", "");
+  const dataBuffer = fileLines.join("\n");
+  const pageIndex = lastFile.replace("Output", "").replace(".txt", "");
+  lastNumber = addNumbers(lastNumber, "1");
+  generatePrimesUpToRecursive(
+    sqrtNum,
+    lastNumber,
+    dataBuffer,
+    +lastCount,
+    +pageIndex
+  );
+};
+
+const isPrimeFromTextRecursive = (num) => {
+  if (notPrimeCheckerFlag(num)) return false;
+  const source = "./output-big";
+  const sqrtNum = sqrtFloor(num);
+  const folder = findMatchingFolder(source, sqrtNum);
+
+  if (folder && !folder.includes("larger than"))
+    return checkDivisorFromFiles(num, folder)
+      ? `${num} is not a prime number.`
+      : `${num} is a prime number.`;
+
+  const lastFolderName = findLastExistingFolderNumber(source);
+  const lastFolderPath = `${source}/${lastFolderName}`;
+  console.log(`Checking divisors in the last existing folder for ${num}...`);
+  if (checkDivisorFromFiles(num, lastFolderPath))
+    return `${num} is not a prime number.`;
+
+  console.log("Generating new prime data for", sqrtNum);
+  // Generate a new folder for sqrtNum and check divisors with new primes
+  const files = parseAndSortFiles(getAllFromDirectory(lastFolderPath));
+  const lastFile = files[files.length - 1];
+  const lastNumber = lastFolderName.replace("output-", "");
+
+  formatLastFileInLastFolderRecursive(
+    lastFolderPath,
+    lastFile,
+    lastNumber,
+    sqrtNum
+  );
+
+  const targetFolderPath = `./output-big/output-${sqrtNum}`;
+  copyAllFiles(files, lastFolderPath, targetFolderPath);
+
+  return checkDivisorFromFiles(num, targetFolderPath)
+    ? `${num} is not a prime number.`
+    : `${num} is a prime number.`;
 };
 
 export {
