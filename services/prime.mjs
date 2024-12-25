@@ -201,6 +201,7 @@ const checkDivisorNotExistOnTextFiles = (number, sqrtNumber, current = "2") => {
   }
   return `${number} is a prime number.`;
 };
+
 // Main method 4: Generate primes within a range
 const generatePrimesInRange = (start, end) => {
   const primesInRange = [];
@@ -718,6 +719,81 @@ const isPrimeFromTextFiles = (num) => {
     sqrtNum,
     addNumbers(lastNumber, "1")
   );
+};
+
+///////////////////////////// what we want is to use isPrimeFromText instead of isPrime in generate folders
+
+const notPrimeCheckerFlag = (number) => {
+  if (number === "1") {
+    console.log("number 1 is not a prime number.");
+    return true;
+  }
+  if (isDivisibleBy2(number)) {
+    console.log(`${number} is dividable by 2.`);
+    return true;
+  }
+  if (isDivisibleBy3(number)) {
+    console.log(`${number} is dividable by 3.`);
+    return true;
+  }
+  if (isDivisibleBy5(number)) {
+    console.log(`${number} is dividable by 5.`);
+    return true;
+  }
+  if (
+    !isDivisibleBy6(subtractNumbers(number, "7")) &&
+    !isDivisibleBy6(subtractNumbers(number, "5"))
+  ) {
+    console.log(`${number} is not on prime pattern.`);
+    return true;
+  }
+  return false;
+};
+
+const checkDivisorNotExistOnTextFilesRecursive = (
+  number,
+  sqrtNumber,
+  current = "2"
+) => {
+  while (findMax(current, sqrtNumber) !== current || current === sqrtNumber) {
+    if (isPrime(current) && isDivisor(number, current)) {
+      console.log(
+        `${number} is dividable by ${current}.\n${number} is not prime.`
+      );
+      return false;
+    }
+    current = addNumbers(current, "1");
+  }
+  return true;
+};
+
+const isPrimeFromTextFilesRecursive = (num) => {
+  if (notPrimeCheckerFlag(num)) return false;
+  const source = "./output-big";
+  const sqrtNum = sqrtFloor(num);
+  const folder = findMatchingFolder(source, sqrtNum);
+  console.log(`Checking if ${num} is prime...`);
+  if (folder && !folder.includes("larger than")) {
+    console.log(`Checking divisors for ${num} in the existing ${folder}...`);
+    return !checkDivisorFromFiles(num, folder);
+  }
+
+  const lastFolderName = findLastExistingFolderNumber(source);
+  const lastFolderPath = `${source}/${lastFolderName}`;
+  console.log(`Checking divisors in the last existing folder for ${num}...`);
+  if (checkDivisorFromFiles(num, lastFolderPath)) return false;
+  const lastNumber = lastFolderName.replace("output-", "");
+
+  if (
+    checkDivisorNotExistOnTextFilesRecursive(
+      num,
+      sqrtNum,
+      addNumbers(lastNumber, "1")
+    )
+  ) {
+    return `${num} is a prime number.`;
+  }
+  return isPrimeFromTextFilesRecursive(sqrtNum);
 };
 
 export {
