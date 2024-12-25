@@ -20,17 +20,23 @@ import {
 
 import { execSync } from "child_process";
 
+// Check if the folder already exist
+const numFolderExist = (number) => {
+  const rootFolder = "./output-big";
+  const dir = `${rootFolder}/output-${number}`;
+  return fsExistsSync(dir) ? (() => {
+    console.log(`${dir} already exists...`);
+    return dir})() : false;
+}
+
 // Create output folder
 const createOutputFolder = (number) => {
   const rootFolder = "./output-big";
   if (!fsExistsSync(rootFolder)) fsMkdirSync(rootFolder, { recursive: true });
 
   const dir = `./output-big/output-${number}`;
-  if (!fsExistsSync(dir)) {
-    fsMkdirSync(dir, { recursive: true });
-    return dir;
-  }
-  throw new Error(`\n-----------\n${dir} already exists!\n---------------\n`);
+  fsMkdirSync(dir, { recursive: true });
+  return dir;
 };
 
 // Generate partitions for range-based operations
@@ -51,6 +57,7 @@ const generatePartitions = (limit, range) => {
 
 // Check if a candidate is a divisor of a number
 const isDivisor = (number, candidate) => {
+  if (!candidate) return false;
   return divideNumbers(number, candidate)[1] === "0" && number !== candidate;
 };
 
@@ -143,14 +150,11 @@ const writeDataToFile = (folderName, filename, data) => {
 };
 
 // Main method 3: Generate all primes up to a number
-const generatePrimesUpTo = (number) => {
+const generatePrimesUpTo = (number, current = "2", dataBuffer = "", count = 0, pageIndex = 0) => {
   const startTime = Date.now();
-  let pageIndex = 0;
+  let checkFolderName = numFolderExist(number)
+  if (checkFolderName) return;
   const folderName = createOutputFolder(number);
-  let count = 0;
-  let dataBuffer = "";
-  let current = "2";
-
   while (findMax(current, number) !== current || current === number) {
     if (isPrime(current)) {
       if (count % 1000000 === 0 && count !== 0) {
@@ -180,6 +184,7 @@ const generatePrimesInRange = (start, end) => {
   let current = start;
   while (findMax(current, end) !== current || current === end) {
     if (isPrime(current)) {
+      console.log(`${current} is a prime number`)
       primesInRange.push(current);
     }
     current = addNumbers(current, "1");
@@ -591,36 +596,65 @@ const checkDivisorFromFiles = (num, folder) => {
       return true
     }
   }
+  return false;
 };
 
-const copyAllFiles = (num) => {
-  const source = "./output-big"
-  const selectedFolder = findLastExistingFolderNumber(source);
-  const sourcePath = `${source}/${selectedFolder}`
-  const targetFolder = createOutputFolder(num);
-  const files = parseAndSortFiles(getAllFromDirectory(sourcePath));
-  for(const i of [selectedFolder,sourcePath,targetFolder,files]){
-    console.log(i)
-  }
+const copyAllFiles = (files, sourcePath, targetFolder) => {
   files.slice(0,-1).forEach((f) =>
     execSync(`cp -r ${sourcePath}/${f} ${targetFolder}/${f}`)
   );
-  const data = primesInFile(files[files.length - 1])
+  return files[files.length-1]
+}
+
+const formatLastFileInLastFolder = (sourceFolder, lastFile, lastNumber, sqrtNum) => {
+  const fileLines = fsReadFileSync(
+    `${sourceFolder}/${lastFile}`,
+    "utf-8"
+  ).split("\n")
+  const lastCount = fileLines.pop().replace("(","").replace(")","");
+  const dataBuffer = fileLines.join("\n");
+  const pageIndex = lastFile.replace("Output", "").replace(".txt", "");
+  generatePrimesUpTo(sqrtNum, lastNumber, dataBuffer, +lastCount, +pageIndex)
+}
+
+const buildOrFindPrimeFolder = (num) => {
+  const source = "./output-big"
+  const sqrtNum = sqrtFloor(num)
+  let folder = findMatchingFolder(source, sqrtNum);
+  if (folder && !folder.includes('larger than')) return folder
+  folder = findLargestOutputFolder(source, getAllFromDirectory)
+  console.log(folder)
 }
 
 const isPrimeFromText = (num) => {
   const source = "./output-big"
-  const sqrtNum = sqrtFloor(num)
-  let folder = findMatchingFolder(source, sqrtNum);
-  if (!folder || folder.includes('larger than')) {
-    // return `No suitable folder found for number ${num}`;
-    const lastFolder = findLastExistingFolderNumber(source);
-    
-    // generatePrimeOutputFromText(sqrtNum)
-    // folder = findMatchingFolder("./output-big", sqrtNum);
+  const sqrtNum = sqrtFloor(num);
+  const folder = findMatchingFolder(source, sqrtNum);
+  if (folder && !folder.includes('larger than')){
+    return checkDivisorFromFiles(num, folder)
+    ? `${num} is not a prime number.`
+    : `${num} is a prime number.`;
   }
-  const divisorFlag = checkDivisorFromFiles(num, folder);
-  return `${num} is${divisorFlag ? ' not':''} a prime number.` 
+  const lastFolderNumber = findLastExistingFolderNumber(source);
+  const lastFolderPath = `${source}/${lastFolderNumber}`;
+  console.log("Checking divisors in the last existing folder...");
+  if (checkDivisorFromFiles(num, lastFolderPath)) {
+    return `${num} is not a prime number.`;
+  }
+  console.log("Generating new prime data for", sqrtNum);
+  // Generate a new folder for sqrtNum and check divisors with new primes
+  const files = parseAndSortFiles(getAllFromDirectory(lastFolderPath));
+  const lastFile = files[files.length - 1];
+  const lastNumber = lastFolderNumber.replace("output-", "");
+
+  formatLastFileInLastFolder(lastFolderPath, lastFile, lastNumber, sqrtNum);
+
+  const targetFolderPath = `./output-big/output-${sqrtNum}`;
+  copyAllFiles(files, lastFolderPath, targetFolderPath);
+
+  return checkDivisorFromFiles(num, targetFolderPath)
+    ? `${num} is not a prime number.`
+    : `${num} is a prime number.`;
 };
 
 export {
