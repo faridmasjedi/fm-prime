@@ -8,6 +8,7 @@ import {
   isDivisibleBy3,
   isDivisibleBy6,
   findMax,
+  isDivisibleBy5,
 } from "./mathOperation.mjs";
 
 import {
@@ -166,7 +167,9 @@ const generatePrimesUpTo = (
   const folderName = createOutputFolder(number);
   while (findMax(current, number) !== current || current === number) {
     if (isPrime(current)) {
+      console.log('current prime:', current)
       if (count % 1000000 === 0 && count !== 0) {
+        if(!dataBuffer.includes(`(${count})`)) dataBuffer += `\n(${count})`
         writeDataToFile(folderName, pageIndex, dataBuffer);
         dataBuffer = "";
         pageIndex++;
@@ -601,9 +604,7 @@ const findLastExistingFolderNumber = (source = "./output-big") => {
 };
 
 const checkDivisorFromFiles = (num, folder) => {
-  if (checkPrimeInFiles(num)) {
-    return false;
-  }
+  if (checkPrimeInFiles(num)) return false;
 
   const files = parseAndSortFiles(getAllFromDirectory(folder));
   for (const file of files) {
@@ -638,6 +639,7 @@ const formatLastFileInLastFolder = (
   const lastCount = fileLines.pop().replace("(", "").replace(")", "");
   const dataBuffer = fileLines.join("\n");
   const pageIndex = lastFile.replace("Output", "").replace(".txt", "");
+  lastNumber = addNumbers(lastNumber, "1")
   generatePrimesUpTo(sqrtNum, lastNumber, dataBuffer, +lastCount, +pageIndex);
 };
 
@@ -654,17 +656,16 @@ const isPrimeFromText = (num) => {
   const source = "./output-big";
   const sqrtNum = sqrtFloor(num);
   const folder = findMatchingFolder(source, sqrtNum);
-  if (folder && !folder.includes("larger than")) {
+  if (folder && !folder.includes("larger than"))
     return checkDivisorFromFiles(num, folder)
       ? `${num} is not a prime number.`
       : `${num} is a prime number.`;
-  }
   const lastFolderNumber = findLastExistingFolderNumber(source);
   const lastFolderPath = `${source}/${lastFolderNumber}`;
   console.log("Checking divisors in the last existing folder...");
-  if (checkDivisorFromFiles(num, lastFolderPath)) {
+  if (checkDivisorFromFiles(num, lastFolderPath))
     return `${num} is not a prime number.`;
-  }
+
   console.log("Generating new prime data for", sqrtNum);
   // Generate a new folder for sqrtNum and check divisors with new primes
   const files = parseAndSortFiles(getAllFromDirectory(lastFolderPath));
