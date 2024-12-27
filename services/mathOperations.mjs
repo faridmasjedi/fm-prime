@@ -1,4 +1,9 @@
-// Convert a number string to a slot-based object
+/**
+ * Converts a number string to a slot-based object.
+ * Each digit is mapped to its position in reverse order.
+ * @param {string} num - The number string to convert.
+ * @returns {Object} - An object where keys are positions and values are digits.
+ */
 const numberToSlots = (num) => {
   if (typeof num !== "string") {
     return "Input should be a string.";
@@ -10,7 +15,13 @@ const numberToSlots = (num) => {
   return result;
 };
 
-// Calculate the sum of digits in a number string
+
+
+/**
+ * Calculates the sum of digits in a number string.
+ * @param {string} num - The number string.
+ * @returns {number} - Sum of the digits.
+ */
 const calculateDigitSum = (num) => {
   if (typeof num !== "string") {
     return "Input should be a string.";
@@ -18,7 +29,11 @@ const calculateDigitSum = (num) => {
   return [...num].reduce((sum, digit) => sum + +digit, 0);
 };
 
-// Check divisibility by 2
+/**
+ * Checks if a number string is divisible by 2.
+ * @param {string} num - The number string.
+ * @returns {boolean} - True if divisible by 2, otherwise false.
+ */
 const isDivisibleBy2 = (num) => {
   if (typeof num !== "string") {
     return "Input should be a string.";
@@ -26,7 +41,11 @@ const isDivisibleBy2 = (num) => {
   return +num[num.length - 1] % 2 === 0;
 };
 
-// Check divisibility by 3
+/**
+ * Checks if a number string is divisible by 3.
+ * @param {string} num - The number string.
+ * @returns {boolean} - True if divisible by 3, otherwise false.
+ */
 const isDivisibleBy3 = (num) => {
   if (typeof num !== "string") {
     return "Input should be a string.";
@@ -34,7 +53,11 @@ const isDivisibleBy3 = (num) => {
   return calculateDigitSum(num) % 3 === 0;
 };
 
-// Check divisibility by 5
+/**
+ * Checks if a number string is divisible by 5.
+ * @param {string} num - The number string.
+ * @returns {boolean} - True if divisible by 5, otherwise false.
+ */
 const isDivisibleBy5 = (num) => {
   if (typeof num !== "string") {
     return "Input should be a string.";
@@ -43,7 +66,11 @@ const isDivisibleBy5 = (num) => {
   return lastDigit === "0" || lastDigit === "5";
 };
 
-// Check divisibility by 6
+/**
+ * Checks if a number string is divisible by 6.
+ * @param {string} num - The number string.
+ * @returns {boolean} - True if divisible by 6, otherwise false.
+ */
 const isDivisibleBy6 = (num) => {
   if (typeof num !== "string") {
     return "Input should be a string.";
@@ -51,7 +78,12 @@ const isDivisibleBy6 = (num) => {
   return isDivisibleBy2(num) && isDivisibleBy3(num);
 };
 
-// Find the maximum of two number strings
+/**
+ * Finds the maximum of two number strings.
+ * @param {string} num1 - First number string.
+ * @param {string} num2 - Second number string.
+ * @returns {string} - The larger of the two numbers.
+ */
 const findMax = (num1, num2) => {
   if (typeof num1 !== "string" || typeof num2 !== "string") {
     return "Inputs should be strings.";
@@ -62,12 +94,22 @@ const findMax = (num1, num2) => {
   return num1 > num2 ? num1 : num2;
 };
 
-// Find the minimum of two number strings
+/**
+ * Finds the minimum of two number strings.
+ * @param {string} num1 - First number string.
+ * @param {string} num2 - Second number string.
+ * @returns {string} - The smaller of the two numbers.
+ */
 const findMin = (num1, num2) => {
   return findMax(num1, num2) === num1 ? num2 : num1;
 };
 
-// Add two number strings
+/**
+ * Adds two number strings.
+ * @param {string} num1 - First number string.
+ * @param {string} num2 - Second number string.
+ * @returns {string} - The sum as a string.
+ */
 const addNumbers = (num1, num2) => {
   if (typeof num1 !== "string" || typeof num2 !== "string") {
     return "Inputs should be strings.";
@@ -91,15 +133,17 @@ const addNumbers = (num1, num2) => {
   return result;
 };
 
-// Subtract two number strings
+/**
+ * Subtracts one number string from another.
+ * @param {string} num1 - First number string (minuend).
+ * @param {string} num2 - Second number string (subtrahend).
+ * @returns {string} - The difference as a string.
+ */
 const subtractNumbers = (num1, num2) => {
   if (typeof num1 !== "string" || typeof num2 !== "string") {
     return "Inputs should be strings.";
   }
-
-  if (num1 === num2) {
-    return "0";
-  }
+  if (num1 === num2) return "0";
 
   const isNegative = findMax(num1, num2) === num2;
   if (isNegative) [num1, num2] = [num2, num1];
@@ -120,11 +164,15 @@ const subtractNumbers = (num1, num2) => {
     }
     result = diff + result;
   }
-
   return (isNegative ? "-" : "") + result.replace(/^0+/, "");
 };
 
-// Multiply a number string by a single digit
+/**
+ * Multiplies a number string by a single digit.
+ * @param {string} num - The number string.
+ * @param {string} digit - The single digit as a string.
+ * @returns {string} - The product as a string.
+ */
 const multiplyByDigit = (num, digit) => {
   if (typeof num !== "string" || typeof digit !== "string") {
     return "Inputs should be strings.";
@@ -137,12 +185,16 @@ const multiplyByDigit = (num, digit) => {
     result = (product % 10) + result;
     carry = Math.floor(product / 10);
   }
-
   if (carry) result = carry + result;
   return result;
 };
 
-// Multiply two number strings
+/**
+ * Multiplies two number strings.
+ * @param {string} num1 - First number string.
+ * @param {string} num2 - Second number string.
+ * @returns {string} - The product as a string.
+ */
 const multiplyNumbers = (num1, num2) => {
   if (typeof num1 !== "string" || typeof num2 !== "string") {
     return "Inputs should be strings.";
@@ -154,18 +206,20 @@ const multiplyNumbers = (num1, num2) => {
       multiplyByDigit(num1, num2[i]) + "0".repeat(num2.length - 1 - i);
     result = addNumbers(result, product);
   }
-
   return result;
 };
 
-// Division returning quotient and remainder
+/**
+ * Divides two number strings and returns the quotient and remainder.
+ * @param {string} num1 - Dividend.
+ * @param {string} num2 - Divisor.
+ * @returns {[string, string]} - Quotient and remainder as strings.
+ */
 const divideNumbers = (num1, num2) => {
   if (typeof num1 !== "string" || typeof num2 !== "string") {
     return "Inputs should be strings.";
   }
-  if (num2 === "0") {
-    return "Division by zero is undefined.";
-  }
+  if (num2 === "0") return "Division by zero is undefined.";
 
   let quotient = "";
   let remainder = "0";
@@ -180,11 +234,14 @@ const divideNumbers = (num1, num2) => {
     }
     quotient += count;
   }
-
   return [quotient.replace(/^0+/, "") || "0", remainder];
 };
 
-// Calculate square root floor of a number string
+/**
+ * Calculates the floor of the square root of a number string.
+ * @param {string} num - The number string.
+ * @returns {string} - The floor of the square root.
+ */
 const sqrtFloor = (num) => {
   if (typeof num !== "string") {
     return "Input should be a string.";
@@ -205,11 +262,15 @@ const sqrtFloor = (num) => {
       high = subtractNumbers(mid, "1");
     }
   }
-
   return ans;
 };
 
-// Power of a number string
+/**
+ * Computes the power of a number string to an exponent.
+ * @param {string} num - The base as a string.
+ * @param {string} exp - The exponent as a string.
+ * @returns {string} - The result as a string.
+ */
 const power = (num, exp) => {
   if (typeof num !== "string" || typeof exp !== "string") {
     return "Inputs should be strings.";
@@ -220,7 +281,6 @@ const power = (num, exp) => {
     result = multiplyNumbers(result, num);
     exp = subtractNumbers(exp, "1");
   }
-
   return result;
 };
 
