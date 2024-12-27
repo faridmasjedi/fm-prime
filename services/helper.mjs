@@ -14,7 +14,13 @@ import {
   generatePrimesUpTo,
   generatePrimesUpToRecursive,
 } from "./primeGenerator.mjs";
-// Generate partitions for range-based operations
+
+/**
+ * Generates partitions for range-based operations.
+ * @param {string} limit - The upper limit for partitions.
+ * @param {string} range - The range of each partition.
+ * @returns {string[]} - Array of partition starting points as strings.
+ */
 const generatePartitions = (limit, range) => {
   if (divideNumbers(range, "1")[0] === "0")
     throw new Error("Range must be greater than 0.");
@@ -31,6 +37,11 @@ const generatePartitions = (limit, range) => {
   return partitions;
 };
 
+/**
+ * Finds the count and last element in a file.
+ * @param {string} filePath - Path to the file.
+ * @returns {string[]} - Array containing count and last number as strings.
+ */
 const findCountsInFile = (filePath) => {
   const data = fsReadFileSync(filePath, "utf-8")
     .split("\n")
@@ -46,7 +57,13 @@ const findCountsInFile = (filePath) => {
   return data;
 };
 
-// Main method 6: Main function to check if a number is prime and return detailed output
+/**
+ * Checks if a number is prime and provides detailed output.
+ * @param {string} number - The number to check.
+ * @param {string} source - Path to the folder containing prime data.
+ * @param {string} partition - Partition size for prime calculations.
+ * @returns {string} - A message indicating whether the number is prime or not.
+ */
 const checkAndExplainPrimeStatus = (
   number,
   source = "./output-big",
@@ -64,7 +81,12 @@ const checkAndExplainPrimeStatus = (
   )}\n------\n`;
 };
 
-// Extract data from the last file and filter based on the target number
+/**
+ * Filters data from the last file based on the target number.
+ * @param {string} filePath - Path to the file.
+ * @param {string} targetNumber - The target number for filtering.
+ * @returns {string} - Filtered data as a string.
+ */
 const filterLastFileData = (filePath, targetNumber) => {
   const data = primesInFile(filePath);
 
@@ -83,7 +105,14 @@ const filterLastFileData = (filePath, targetNumber) => {
   return filteredData.join("");
 };
 
-// Copy prime data from source to target folder
+/**
+ * Copies prime data from a source folder to a target folder.
+ * @param {string} sourceFolder - Path to the source folder.
+ * @param {string} folderNumber - Number representing the source folder.
+ * @param {string} targetNumber - Number for the target folder.
+ * @param {Function} getDirsFunc - Function to retrieve directory contents.
+ * @param {string} fileToSearch - File name to search in the source folder.
+ */
 const copyPrimeDataToTarget = (
   sourceFolder,
   folderNumber,
@@ -108,6 +137,13 @@ const copyPrimeDataToTarget = (
   writeDataToFile(targetFolder, files[fileIndex], dataBuffer);
 };
 
+/**
+ * Retrieves data from a selected file and filters it based on a number.
+ * @param {string} sourceFolder - Path to the source folder.
+ * @param {string} selectedFile - The selected file name.
+ * @param {string} num - Target number for filtering.
+ * @returns {string} - Filtered data as a string.
+ */
 const dataFromSelectedFile = (sourceFolder, selectedFile, num) => {
   const lastFileData = fsReadFileSync(
     `${sourceFolder}/${selectedFile}`,
@@ -122,6 +158,13 @@ const dataFromSelectedFile = (sourceFolder, selectedFile, num) => {
     .join(", ");
 };
 
+/**
+ * Filters a single line of data based on the target number.
+ * @param {string} line - Line of data to filter.
+ * @param {string} num - Target number for filtering.
+ * @param {string} [lastCount=""] - Last count from the previous line.
+ * @returns {[string, boolean]} - Filtered line and a flag indicating if more processing is needed.
+ */
 const filterLineData = (line, num, lastCount = "") => {
   const lineElements = line.split(",");
   const lineElementsSize = lineElements.length;
@@ -150,6 +193,13 @@ const filterLineData = (line, num, lastCount = "") => {
   return [filteredLastLine.join(",") + `,\n(${count})`, false];
 };
 
+/**
+ * Formats data from a selected file and filters it based on a number.
+ * @param {string} sourceFolder - Path to the source folder.
+ * @param {string} selectedFile - The selected file name.
+ * @param {string} num - Target number for filtering.
+ * @returns {string} - Filtered data as a string.
+ */
 const formattedDataFromSelectedFile = (sourceFolder, selectedFile, num) => {
   const fileLines = fsReadFileSync(
     `${sourceFolder}/${selectedFile}`,
@@ -166,7 +216,13 @@ const formattedDataFromSelectedFile = (sourceFolder, selectedFile, num) => {
   return lastFilteredData.join("\n");
 };
 
-// Copy all prime outputs from the largest folder
+/**
+ * Copies all prime outputs from the largest folder to a new folder.
+ * @param {string} sourceFolder - Path to the source folder.
+ * @param {string} num - Target number for creating the folder.
+ * @param {Function} getDirsFunc - Function to retrieve directory contents.
+ * @returns {Object} - Contains filtered data, folder path, and target file name.
+ */
 const copyAllPrimeOutputs = (sourceFolder, num, getDirsFunc) => {
   const files = parseAndSortFiles(getDirsFunc(sourceFolder));
   const targetFolder = createOutputFolder(num);
@@ -189,6 +245,11 @@ const copyAllPrimeOutputs = (sourceFolder, num, getDirsFunc) => {
   };
 };
 
+/**
+ * Generates a scientific representation of divisors.
+ * @param {string[]} divisors - Array of divisors.
+ * @returns {string} - Scientific representation of the divisors.
+ */
 const generateScientificRepresentation = (divisors) => {
   const counts = divisors.reduce((acc, val) => {
     acc[val] = (acc[val] || 0) + 1;
@@ -200,6 +261,13 @@ const generateScientificRepresentation = (divisors) => {
     .join(" * ");
 };
 
+/**
+ * Formats the last file in a folder for recursive prime generation.
+ * @param {string} sourceFolder - Path to the source folder.
+ * @param {string} lastFile - Name of the last file.
+ * @param {string} lastNumber - Last processed number.
+ * @param {string} sqrtNum - Square root number for prime generation.
+ */
 const formatLastFileInLastFolder = (
   sourceFolder,
   lastFile,
@@ -217,6 +285,13 @@ const formatLastFileInLastFolder = (
   generatePrimesUpTo(sqrtNum, lastNumber, dataBuffer, +lastCount, +pageIndex);
 };
 
+/**
+ * Formats the last file in a folder for recursive prime generation.
+ * @param {string} sourceFolder - Path to the source folder.
+ * @param {string} lastFile - Name of the last file.
+ * @param {string} lastNumber - Last processed number.
+ * @param {string} sqrtNum - Square root number for prime generation.
+ */
 const formatLastFileInLastFolderRecursive = (
   sourceFolder,
   lastFile,
