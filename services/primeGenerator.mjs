@@ -1,19 +1,17 @@
 import {
   addNumbers,
   findMax,
-  multiplyNumbers,
-  subtractNumbers,
 } from "./mathOperations.mjs";
 
 import {
   getAllFromDirectory,
   numFolderExist,
+  copyFilesAndFormatLastFile,
   createOutputFolder,
   writeDataToFile,
   findLargestOutputFolder,
 } from "./fileOperations.mjs";
 
-import { readFileSync as fsReadFileSync } from "fs";
 import { isPrime, isPrimeFromTextFilesRecursive } from "./primeChecker.mjs";
 import { copyAllPrimeOutputs } from "./helper.mjs";
 
@@ -151,8 +149,30 @@ const generatePrimesUpToRecursive = (
   return count;
 };
 
+/**
+ * Generates prime number files for a specified number using existing data and creates new output if necessary.
+ * 
+ * @param {string} num - The target number for which prime number files will be generated.
+ * 
+ * @description
+ * This method performs the following steps:
+ * 1. Attempts to generate prime data for the specified number by leveraging existing folders and files using `generatePrimeOutputFromText`.
+ * 2. If the target number exceeds the range of the largest existing output, it:
+ *    - Formats the last file of the current largest output folder.
+ *    - Copies all relevant files to create a new output folder for the specified number using `copyFilesAndFormatLastFile`.
+ * 
+ * This method ensures that the data generation process efficiently uses pre-existing outputs and only extends the range when required.
+ */
+
+const generatePrimesFiles = (num) => {
+  const generateFromExisitingFoldersResult = generatePrimeOutputFromText(num);
+  if (!generateFromExisitingFoldersResult?.includes(`is greater than largest output`)) return;
+  copyFilesAndFormatLastFile(num)
+};
+
 export {
   generatePrimesUpTo,
+  generatePrimesFiles,
   generatePrimesInRange,
   generatePrimeOutputFromText,
   generatePrimesUpToRecursive,
