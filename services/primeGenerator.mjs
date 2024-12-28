@@ -16,15 +16,22 @@ import {
 import { readFileSync as fsReadFileSync } from "fs";
 import { isPrime, isPrimeFromTextFilesRecursive } from "./primeChecker.mjs";
 import { copyAllPrimeOutputs } from "./helper.mjs";
-///////////////////////////////////////////////////
 
-// Main method 3: Generate all primes up to a number
+/**
+ * Generates all prime numbers up to a given number and writes the results to a text file.
+ * @param {string} number - The upper limit for prime generation.
+ * @param {string} [current="2"] - The starting number for prime generation.
+ * @param {string} [dataBuffer=""] - A buffer for temporarily storing generated primes.
+ * @param {number} [count=0] - Counter for the total primes generated.
+ * @param {number} [pageIndex=0] - Index for output file pagination.
+ * @returns {number} - Total count of primes generated.
+ */
 const generatePrimesUpTo = (
   number,
   current = "2",
   dataBuffer = "",
   count = 0,
-  pageIndex = 0,
+  pageIndex = 0
 ) => {
   const startTime = Date.now();
   let checkFolderName = numFolderExist(number);
@@ -55,7 +62,13 @@ const generatePrimesUpTo = (
   return count;
 };
 
-// Main method 4: Generate primes within a range
+/**
+ * Generates prime numbers within a specified range and returns them as an array.
+ * @param {string} start - The starting number for the range.
+ * @param {string} end - The ending number for the range.
+ * @param {string} [partition="1"] - Partitioning factor for optimized prime checking.
+ * @returns {Array<string>} - An array of prime numbers within the specified range.
+ */
 const generatePrimesInRange = (start, end, partition = "1") => {
   const primesInRange = [];
   let current = start;
@@ -69,7 +82,12 @@ const generatePrimesInRange = (start, end, partition = "1") => {
   return primesInRange;
 };
 
-// Main method 7: Generate prime output from existing text files
+/**
+ * Generates prime output data based on existing text files.
+ * @param {string} num - The upper limit for the new prime output.
+ * @param {Function} [getDirsFunc=getAllFromDirectory] - Function to retrieve directories.
+ * @returns {string} - Message indicating the result of the operation.
+ */
 const generatePrimeOutputFromText = (
   num,
   getDirsFunc = getAllFromDirectory
@@ -92,8 +110,17 @@ const generatePrimeOutputFromText = (
   writeDataToFile(folder, targetFileName, lastFilteredData);
 };
 /// Example for creating folders for each number.
-//console.log(generatePrimeOutputFromText("100000"))
+/// console.log(generatePrimeOutputFromText("100000"))
 
+/**
+ * Generates all primes up to a number using a recursive primality checking method.
+ * @param {string} number - The upper limit for prime generation.
+ * @param {string} [current="2"] - The starting number for prime generation.
+ * @param {string} [dataBuffer=""] - A buffer for temporarily storing generated primes.
+ * @param {number} [count=0] - Counter for the total primes generated.
+ * @param {number} [pageIndex=0] - Index for output file pagination.
+ * @returns {number} - Total count of primes generated.
+ */
 const generatePrimesUpToRecursive = (
   number,
   current = "2",
@@ -125,8 +152,8 @@ const generatePrimesUpToRecursive = (
 };
 
 export {
-    generatePrimesUpTo,
-    generatePrimesInRange,
-    generatePrimeOutputFromText,
-    generatePrimesUpToRecursive
+  generatePrimesUpTo,
+  generatePrimesInRange,
+  generatePrimeOutputFromText,
+  generatePrimesUpToRecursive,
 };
