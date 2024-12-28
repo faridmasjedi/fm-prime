@@ -18,7 +18,9 @@ import {
 } from "./fileOperations.mjs";
 import {
   generatePrimesUpTo,
+  generatePrimesUpToUpdated,
   generatePrimesUpToRecursive,
+  generatePrimesUpToRecursiveUpdated,
 } from "./primeGenerator.mjs";
 
 /**
@@ -288,7 +290,7 @@ const formatLastFileInLastFolder = (
   const dataBuffer = fileLines.join("\n");
   const pageIndex = lastFile.replace("Output", "").replace(".txt", "");
   lastNumber = addNumbers(lastNumber, "1");
-  generatePrimesUpTo(sqrtNum, lastNumber, dataBuffer, +lastCount, +pageIndex);
+  generatePrimesUpToUpdated(sqrtNum, lastNumber, dataBuffer, +lastCount, +pageIndex);
 };
 
 /**
@@ -312,7 +314,7 @@ const formatLastFileInLastFolderRecursive = (
   const dataBuffer = fileLines.join("\n");
   const pageIndex = lastFile.replace("Output", "").replace(".txt", "");
   lastNumber = addNumbers(lastNumber, "1");
-  generatePrimesUpToRecursive(
+  generatePrimesUpToRecursiveUpdated(
     sqrtNum,
     lastNumber,
     dataBuffer,
