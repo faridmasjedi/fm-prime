@@ -1,0 +1,2 @@
+/// Need to use hashmaps instaed of arrays
+/// what if we convert all numbers to number 6
