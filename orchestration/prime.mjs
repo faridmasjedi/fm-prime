@@ -35,6 +35,7 @@ import {
   generatePrimeOutputFromText, // **Main 7 ( super quick | this has a limitation which will just create the output, if the number we input is less than the greatest one that already exists)
   generatePrimesInRange, // Main 4 ( take too much time | quicker than previous ones | This will check divisors from first divisor which is on prime pattern )
   generatePrimesInRangeUpdated, // Main 4-1 ( take too much time | quicker than previous ones | This will check divisors from first divisor which is on prime pattern | Quicker than generatePrimesInRange)
+  generatePrimesInRangeTextFiles, // Main 4-2 | Super Quick
   generatePrimesUpTo, // Main 3 ( take too much time | This will create primes from first prime)
   generatePrimesUpToUpdated, // Main 3-1 ( take too much time | This will create primes from first prime | quicker than generatePrimesUpTo)
 } from "../services/primeGenerator.mjs";
