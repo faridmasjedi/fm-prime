@@ -7,6 +7,7 @@ import {
   readdirSync as fsReadDirSync,
   readFileSync as fsReadFileSync,
 } from "fs";
+import { formatLastFileInLastFolderRecursive } from "./helper.mjs";
 
 /**
  * Retrieves all files and directories from a specified source folder.
@@ -287,9 +288,42 @@ const copyAllFiles = (files, sourcePath, targetFolder) => {
   return files[files.length - 1];
 };
 
+/**
+ * Copies files from the last existing folder and formats the last file to create a new output folder for a specified number.
+ *
+ * @param {string} num - The target number for which the new folder and formatted file will be created.
+ *
+ * @description
+ * This method performs the following steps:
+ * 1. Identifies the last existing folder in the output directory.
+ * 2. Parses and sorts the files from the identified folder.
+ * 3. Formats the last file of the folder for the specified target number using `formatLastFileInLastFolderRecursive`.
+ * 4. Creates a new folder named after the target number (`output-{num}`).
+ * 5. Copies all files from the source folder into the newly created target folder.
+ *
+ * This method is typically used to extend the range of prime outputs or other processed data while maintaining consistency between folders.
+ */
+const copyFilesAndFormatLastFile = (num) => {
+  const source = "./output-big";
+  const lastFolderName = findLastExistingFolderNumber(source);
+  const lastFolderPath = `${source}/${lastFolderName}`;
+  const files = parseAndSortFiles(getAllFromDirectory(lastFolderPath));
+  const lastFile = files[files.length - 1];
+  const lastNumber = lastFolderName.replace("output-", "");
+  formatLastFileInLastFolderRecursive(
+    lastFolderPath,
+    lastFile,
+    lastNumber,
+    num
+  );
+  const targetFolderPath = `./output-big/output-${num}`;
+  copyAllFiles(files, lastFolderPath, targetFolderPath);
+};
+
 export {
   getAllFromDirectory,
   numFolderExist,
+  copyFilesAndFormatLastFile,
   createOutputFolder,
   writeDataToFile,
   parseAndSortFiles,
