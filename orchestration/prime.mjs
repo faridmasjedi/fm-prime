@@ -30,9 +30,9 @@ import {
 } from "../services/primeChecker.mjs";
 
 import {
+  generatePrimesFiles, // ***Main 14 | Super quick 
   generatePrimesUpToRecursive, // ***Main 13 | Super quick
   generatePrimeOutputFromText, // **Main 7 ( super quick | this has a limitation which will just create the output, if the number we input is less than the greatest one that already exists)
   generatePrimesInRange, // Main 4 ( take too much time | quicker than previous ones | This will check divisors from first divisor which is on prime pattern )
   generatePrimesUpTo, // Main 3 ( take too much time | This will create primes from first prime)
 } from "../services/primeGenerator.mjs";
-
