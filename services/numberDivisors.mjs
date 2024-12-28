@@ -1,4 +1,5 @@
 import { findMatchingFolder } from "./fileOperations.mjs";
+import { findNextCandidate } from "./helper.mjs";
 import {
   addNumbers,
   divideNumbers,
@@ -11,6 +12,7 @@ import {
   findPrimeFactor,
   isDivisor,
   isPrime,
+  isPrimeFromTextFilesRecursiveUpdated,
 } from "./primeChecker.mjs";
 
 /**
@@ -57,7 +59,43 @@ const calculateDivisors = (num, partition = "1") => {
   // Sort divisors numerically as strings
   return divisors.sort((a, b) => (findMax(a, b) === a ? 1 : -1));
 };
+const calculateDivisorsUpdated = (num) => {
+  const divisors = ["1"];
 
+  while (num !== "1") {
+    if (isPrimeFromTextFilesRecursiveUpdated(num)) {
+      divisors.push(num);
+      break;
+    }
+
+    let divisorFound = false;
+    let currentDivisor = "2";
+    const sqrtNum = sqrtFloor(num);
+
+    // Check divisors up to the square root
+    while (
+      findMax(currentDivisor, sqrtNum) !== currentDivisor ||
+      currentDivisor === sqrtNum
+    ) {
+      if (isDivisor(num, currentDivisor)) {
+        divisors.push(currentDivisor);
+        num = divideNumbers(num, currentDivisor)[0]; // Update num after division
+        divisorFound = true;
+        break;
+      }
+      currentDivisor = findNextCandidate(currentDivisor);
+    }
+
+    // If no divisor found, the remaining number is a prime factor
+    if (!divisorFound) {
+      divisors.push(num);
+      break;
+    }
+  }
+
+  // Sort divisors numerically as strings
+  return divisors.sort((a, b) => (findMax(a, b) === a ? 1 : -1));
+};
 /**
  * Calculates all divisors of a number using pre-generated text files.
  * Finds matching text files containing primes and uses them for divisor checks.
@@ -78,9 +116,10 @@ const calculateDivisorsUsingText = (num) => {
 
 // Export the updated methods
 export {
-  checkDivisorFromFiles,       // Check if a single divisor exists in files
-  checkDivisorsFromFiles,      // Check all divisors for a number using files
-  findPrimeFactor,             // Find the smallest prime factor of a number
-  calculateDivisors,           // Calculate divisors using prime factorization
-  calculateDivisorsUsingText,  // Calculate divisors using pre-generated text files
+  checkDivisorFromFiles, // Check if a single divisor exists in files
+  checkDivisorsFromFiles, // Check all divisors for a number using files
+  findPrimeFactor, // Find the smallest prime factor of a number
+  calculateDivisors, // Calculate divisors using prime factorization
+  calculateDivisorsUpdated, // Calculate divisors using prime factorization | quicker
+  calculateDivisorsUsingText, // Calculate divisors using pre-generated text files
 };
