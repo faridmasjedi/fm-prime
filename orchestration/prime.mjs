@@ -4,6 +4,7 @@ import {
 } from "../services/helper.mjs";
 import {
   calculateDivisors, // Main 2 ( take too much time | This will check divisors from first divisor which is on prime pattern )
+  calculateDivisorsUpdated, // Main 2-1 | quicker than calculateDivisors
   calculateDivisorsUsingText, // **Main 8 ( much quicker | This will check the files for sqrt and will do the job)
 } from "../services/numberDivisors.mjs";
 import {
@@ -36,13 +37,13 @@ import {
 import {
   generatePrimesFiles, // ***Main 14 | Super quick
   generatePrimesFilesUpdated, // ***Main 14-1 | quicker than generatePrimesFiles
-  generatePrimesUpToRecursive, // ***Main 13 | Super quick
-  generatePrimesUpToRecursiveUpdated, // ***Main 13-1 | Super quick | quicker than generatePrimesUpToRecursive
+  generatePrimesUpToRecursive, // ***Main 13 | not that much quick | From "2"
+  generatePrimesUpToRecursiveUpdated, // ***Main 13-1 | not that much quick | From "2" | quicker than generatePrimesUpToRecursive
   generatePrimesRecursiveUpdated, // ***Main 13-2 | Super quick | quicker than generatePrimesUpToRecursiveUpdated
   generatePrimeOutputFromText, // **Main 7 ( super quick | this has a limitation which will just create the output, if the number we input is less than the greatest one that already exists)
   generatePrimesInRange, // Main 4 ( take too much time | quicker than previous ones | This will check divisors from first divisor which is on prime pattern )
   generatePrimesInRangeUpdated, // Main 4-1 ( take too much time | quicker than previous ones | This will check divisors from first divisor which is on prime pattern | Quicker than generatePrimesInRange)
-  generatePrimesInRangeTextFiles, // Main 4-2 | Super Quick
+  generatePrimesInRangeTextFiles, // Main 4-2 | quicker than previous methods
   generatePrimesInRangeTextFilesUpdated, // Main 4-3 | quicker than generatePrimesInRangeTextFiles
   generatePrimesUpTo, // Main 3 ( take too much time | This will create primes from first prime)
   generatePrimesUpToUpdated, // Main 3-1 ( take too much time | This will create primes from first prime | quicker than generatePrimesUpTo)
