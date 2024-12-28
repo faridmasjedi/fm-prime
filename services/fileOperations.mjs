@@ -7,7 +7,10 @@ import {
   readdirSync as fsReadDirSync,
   readFileSync as fsReadFileSync,
 } from "fs";
-import { formatLastFileInLastFolderRecursive } from "./helper.mjs";
+import {
+  formatLastFileInLastFolderRecursive,
+  formatLastFileInLastFolderRecursiveUpdated,
+} from "./helper.mjs";
 
 /**
  * Retrieves all files and directories from a specified source folder.
@@ -319,11 +322,28 @@ const copyFilesAndFormatLastFile = (num) => {
   const targetFolderPath = `./output-big/output-${num}`;
   copyAllFiles(files, lastFolderPath, targetFolderPath);
 };
+const copyFilesAndFormatLastFileUpdated = (num) => {
+  const source = "./output-big";
+  const lastFolderName = findLastExistingFolderNumber(source);
+  const lastFolderPath = `${source}/${lastFolderName}`;
+  const files = parseAndSortFiles(getAllFromDirectory(lastFolderPath));
+  const lastFile = files[files.length - 1];
+  const lastNumber = lastFolderName.replace("output-", "");
+  formatLastFileInLastFolderRecursiveUpdated(
+    lastFolderPath,
+    lastFile,
+    lastNumber,
+    num
+  );
+  const targetFolderPath = `./output-big/output-${num}`;
+  copyAllFiles(files, lastFolderPath, targetFolderPath);
+};
 
 export {
   getAllFromDirectory,
   numFolderExist,
   copyFilesAndFormatLastFile,
+  copyFilesAndFormatLastFileUpdated,
   createOutputFolder,
   writeDataToFile,
   parseAndSortFiles,
