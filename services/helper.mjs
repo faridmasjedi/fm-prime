@@ -7,10 +7,14 @@ import {
 } from "./mathOperations.mjs";
 import { readFileSync as fsReadFileSync } from "fs";
 import {
+  isPrimeFromTextFilesRecursiveUpdated,
   isPrimeUsingFiles,
   isPrimeUsingFilesUpdated,
 } from "./primeChecker.mjs";
-import { calculateDivisors } from "./numberDivisors.mjs";
+import {
+  calculateDivisors,
+  calculateDivisorsUpdated,
+} from "./numberDivisors.mjs";
 import {
   copyFilesToFolder,
   copySelectedFiles,
@@ -47,6 +51,43 @@ const generatePartitions = (limit, range) => {
   }
 
   return partitions;
+};
+
+/**
+ * Finds the next prime candidate based on the current number.
+ *
+ * This function uses a mapping strategy for the smallest prime numbers
+ * (2 and 3) and a mathematical approach for larger numbers to determine
+ * the next potential prime candidate. It leverages modular arithmetic and
+ * the 6k ± 1 rule for efficient computation of prime candidates.
+ *
+ * @param {string} current - The current number as a string.
+ * @returns {string} - The next potential prime candidate as a string.
+ */
+const findNextCandidate = (current) => {
+  const nextCandidateMap = {
+    2: "3", // After 2, the next prime is 3.
+    3: "5", // After 3, the next prime is 5.
+    else: (current) => {
+      const primeIndex1 = divideNumbers(addNumbers(current, "1"), "6");
+      const primeIndex2 = divideNumbers(subtractNumbers(current, "1"), "6");
+
+      // If current + 1 is divisible by 6, return current + 2
+      if (primeIndex1[1] === "0") return addNumbers(current, "2");
+
+      // If current - 1 is divisible by 6, return current + 4
+      if (primeIndex2[1] === "0") return addNumbers(current, "4");
+
+      // Default to 6k - 1 approach
+      return subtractNumbers(
+        multiplyNumbers(addNumbers(primeIndex1[0], "1"), "6"),
+        "1"
+      );
+    },
+  };
+
+  // Return directly mapped values or compute using the "else" case
+  return nextCandidateMap[current] || nextCandidateMap["else"](current);
 };
 
 /**
@@ -92,18 +133,14 @@ const checkAndExplainPrimeStatus = (
     ", "
   )}\n------\n`;
 };
-const checkAndExplainPrimeStatusUpdated = (
-  number,
-  source = "./output-big",
-  partition = "1"
-) => {
-  const isPrimeNumber = isPrimeUsingFilesUpdated(number, source, partition);
+const checkAndExplainPrimeStatusUpdated = (number, source = "./output-big") => {
+  const isPrimeNumber = isPrimeFromTextFilesRecursiveUpdated(number, source);
 
   if (typeof isPrimeNumber !== "boolean") return isPrimeNumber; // Message from `findMatchingFolder` if folder not found
   if (isPrimeNumber === true)
     return `\n------\n${number} is a prime number.\n------\n`;
 
-  const divisors = calculateDivisors(number, partition);
+  const divisors = calculateDivisorsUpdated(number);
   return `\n------\n${number} is not a prime number.\n\nIt has these divisors: ${divisors.join(
     ", "
   )}\n------\n`;
@@ -369,43 +406,6 @@ const formatLastFileInLastFolderRecursiveUpdated = (
     +lastCount,
     +pageIndex
   );
-};
-
-/**
- * Finds the next prime candidate based on the current number.
- *
- * This function uses a mapping strategy for the smallest prime numbers
- * (2 and 3) and a mathematical approach for larger numbers to determine
- * the next potential prime candidate. It leverages modular arithmetic and
- * the 6k ± 1 rule for efficient computation of prime candidates.
- *
- * @param {string} current - The current number as a string.
- * @returns {string} - The next potential prime candidate as a string.
- */
-const findNextCandidate = (current) => {
-  const nextCandidateMap = {
-    2: "3", // After 2, the next prime is 3.
-    3: "5", // After 3, the next prime is 5.
-    else: (current) => {
-      const primeIndex1 = divideNumbers(addNumbers(current, "1"), "6");
-      const primeIndex2 = divideNumbers(subtractNumbers(current, "1"), "6");
-
-      // If current + 1 is divisible by 6, return current + 2
-      if (primeIndex1[1] === "0") return addNumbers(current, "2");
-
-      // If current - 1 is divisible by 6, return current + 4
-      if (primeIndex2[1] === "0") return addNumbers(current, "4");
-
-      // Default to 6k - 1 approach
-      return subtractNumbers(
-        multiplyNumbers(addNumbers(primeIndex1[0], "1"), "6"),
-        "1"
-      );
-    },
-  };
-
-  // Return directly mapped values or compute using the "else" case
-  return nextCandidateMap[current] || nextCandidateMap["else"](current);
 };
 
 export {
