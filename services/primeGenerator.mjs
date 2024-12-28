@@ -1,7 +1,4 @@
-import {
-  addNumbers,
-  findMax,
-} from "./mathOperations.mjs";
+import { addNumbers, findMax } from "./mathOperations.mjs";
 
 import {
   getAllFromDirectory,
@@ -13,7 +10,7 @@ import {
 } from "./fileOperations.mjs";
 
 import { isPrime, isPrimeFromTextFilesRecursive } from "./primeChecker.mjs";
-import { copyAllPrimeOutputs } from "./helper.mjs";
+import { copyAllPrimeOutputs, findNextCandidate } from "./helper.mjs";
 
 /**
  * Generates all prime numbers up to a given number and writes the results to a text file.
@@ -59,6 +56,42 @@ const generatePrimesUpTo = (
   );
   return count;
 };
+const generatePrimesUpToUpdated = (
+  number,
+  current = "2",
+  dataBuffer = "",
+  count = 0,
+  pageIndex = 0
+) => {
+  const startTime = Date.now();
+  let checkFolderName = numFolderExist(number);
+  if (checkFolderName) return;
+  const folderName = createOutputFolder(number);
+  while (findMax(current, number) !== current || current === number) {
+    if (isPrime(current)) {
+      console.log("current prime:", current);
+      if (count % 1000000 === 0 && count !== 0) {
+        if (!dataBuffer.includes(`(${count})`)) dataBuffer += `\n(${count})`;
+        writeDataToFile(folderName, pageIndex, dataBuffer);
+        dataBuffer = "";
+        pageIndex++;
+      }
+      dataBuffer +=
+        count % 20 === 0 ? `\n(${count}) | ${current},` : `${current},`;
+      count++;
+    }
+
+    current = findNextCandidate(current);
+  }
+
+  writeDataToFile(folderName, pageIndex, dataBuffer + `\n(${count})`);
+
+  const finishTime = Date.now();
+  console.log(
+    `Time to finish the job: ${(finishTime - startTime) / 1000} seconds`
+  );
+  return count;
+};
 
 /**
  * Generates prime numbers within a specified range and returns them as an array.
@@ -76,6 +109,19 @@ const generatePrimesInRange = (start, end, partition = "1") => {
       primesInRange.push(current);
     }
     current = addNumbers(current, "1");
+  }
+  return primesInRange;
+};
+const generatePrimesInRangeUpdated = (start, end, partition = "1") => {
+  const primesInRange = [];
+  let current = start;
+  while (findMax(current, end) !== current || current === end) {
+    console.log(`Checking ${current} number`);
+    if (isPrime(current, partition)) {
+      console.log(`${current} is a prime number`);
+      primesInRange.push(current);
+    }
+    current = findNextCandidate(current);
   }
   return primesInRange;
 };
@@ -148,32 +194,74 @@ const generatePrimesUpToRecursive = (
   writeDataToFile(folderName, pageIndex, dataBuffer + `\n(${count})`);
   return count;
 };
+const generatePrimesUpToRecursiveUpdated = (
+  number,
+  current = "2",
+  dataBuffer = "",
+  count = 0,
+  pageIndex = 0
+) => {
+  const startTime = Date.now();
+  let checkFolderName = numFolderExist(number);
+  if (checkFolderName) return;
+  const folderName = createOutputFolder(number);
+  while (findMax(current, number) !== current || current === number) {
+    if (isPrimeFromTextFilesRecursive(current)) {
+      console.log("current prime:", current);
+      if (count % 1000000 === 0 && count !== 0) {
+        if (!dataBuffer.includes(`(${count})`)) dataBuffer += `\n(${count})`;
+        writeDataToFile(folderName, pageIndex, dataBuffer);
+        dataBuffer = "";
+        pageIndex++;
+      }
+      dataBuffer +=
+        count % 20 === 0 ? `\n(${count}) | ${current},` : `${current},`;
+      count++;
+    }
+    current = findNextCandidate(current);
+  }
+
+  writeDataToFile(folderName, pageIndex, dataBuffer + `\n(${count})`);
+  const finishTime = Date.now();
+  console.log(
+    `Time to finish the job: ${(finishTime - startTime) / 1000} seconds`
+  );
+  return count;
+};
 
 /**
  * Generates prime number files for a specified number using existing data and creates new output if necessary.
- * 
+ *
  * @param {string} num - The target number for which prime number files will be generated.
- * 
+ *
  * @description
  * This method performs the following steps:
  * 1. Attempts to generate prime data for the specified number by leveraging existing folders and files using `generatePrimeOutputFromText`.
  * 2. If the target number exceeds the range of the largest existing output, it:
  *    - Formats the last file of the current largest output folder.
  *    - Copies all relevant files to create a new output folder for the specified number using `copyFilesAndFormatLastFile`.
- * 
+ *
  * This method ensures that the data generation process efficiently uses pre-existing outputs and only extends the range when required.
  */
 
 const generatePrimesFiles = (num) => {
   const generateFromExisitingFoldersResult = generatePrimeOutputFromText(num);
-  if (!generateFromExisitingFoldersResult?.includes(`is greater than largest output`)) return;
-  copyFilesAndFormatLastFile(num)
+  if (
+    !generateFromExisitingFoldersResult?.includes(
+      `is greater than largest output`
+    )
+  )
+    return;
+  copyFilesAndFormatLastFile(num);
 };
 
 export {
   generatePrimesUpTo,
+  generatePrimesUpToUpdated,
   generatePrimesFiles,
   generatePrimesInRange,
+  generatePrimesInRangeUpdated,
   generatePrimeOutputFromText,
   generatePrimesUpToRecursive,
+  generatePrimesUpToRecursiveUpdated,
 };
