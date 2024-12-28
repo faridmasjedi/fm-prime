@@ -259,7 +259,6 @@ const checkDivisorsFromFiles = (num, folder, divisors = []) => {
       divisors.push(num);
       return divisors;
     }
-
   }
 };
 
@@ -371,6 +370,10 @@ const notPrimeBasicChecker = (number) => {
   if (number === "1") {
     console.log("number 1 is not a prime number.");
     return true;
+  }
+  if (number === "2" || number === "3" || number === "5") {
+    console.log(`${number} is a prime number.`);
+    return false;
   }
   if (isDivisibleBy2(number)) {
     console.log(`${number} is dividable by 2.`);
