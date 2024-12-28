@@ -6,7 +6,10 @@ import {
   subtractNumbers,
 } from "./mathOperations.mjs";
 import { readFileSync as fsReadFileSync } from "fs";
-import { isPrimeUsingFiles } from "./primeChecker.mjs";
+import {
+  isPrimeUsingFiles,
+  isPrimeUsingFilesUpdated,
+} from "./primeChecker.mjs";
 import { calculateDivisors } from "./numberDivisors.mjs";
 import {
   copyFilesToFolder,
@@ -21,6 +24,7 @@ import {
   generatePrimesUpToUpdated,
   generatePrimesUpToRecursive,
   generatePrimesUpToRecursiveUpdated,
+  generatePrimesRecursiveUpdated,
 } from "./primeGenerator.mjs";
 
 /**
@@ -78,6 +82,22 @@ const checkAndExplainPrimeStatus = (
   partition = "1"
 ) => {
   const isPrimeNumber = isPrimeUsingFiles(number, source, partition);
+
+  if (typeof isPrimeNumber !== "boolean") return isPrimeNumber; // Message from `findMatchingFolder` if folder not found
+  if (isPrimeNumber === true)
+    return `\n------\n${number} is a prime number.\n------\n`;
+
+  const divisors = calculateDivisors(number, partition);
+  return `\n------\n${number} is not a prime number.\n\nIt has these divisors: ${divisors.join(
+    ", "
+  )}\n------\n`;
+};
+const checkAndExplainPrimeStatusUpdated = (
+  number,
+  source = "./output-big",
+  partition = "1"
+) => {
+  const isPrimeNumber = isPrimeUsingFilesUpdated(number, source, partition);
 
   if (typeof isPrimeNumber !== "boolean") return isPrimeNumber; // Message from `findMatchingFolder` if folder not found
   if (isPrimeNumber === true)
@@ -290,7 +310,13 @@ const formatLastFileInLastFolder = (
   const dataBuffer = fileLines.join("\n");
   const pageIndex = lastFile.replace("Output", "").replace(".txt", "");
   lastNumber = addNumbers(lastNumber, "1");
-  generatePrimesUpToUpdated(sqrtNum, lastNumber, dataBuffer, +lastCount, +pageIndex);
+  generatePrimesUpToUpdated(
+    sqrtNum,
+    lastNumber,
+    dataBuffer,
+    +lastCount,
+    +pageIndex
+  );
 };
 
 /**
@@ -315,6 +341,28 @@ const formatLastFileInLastFolderRecursive = (
   const pageIndex = lastFile.replace("Output", "").replace(".txt", "");
   lastNumber = addNumbers(lastNumber, "1");
   generatePrimesUpToRecursiveUpdated(
+    sqrtNum,
+    lastNumber,
+    dataBuffer,
+    +lastCount,
+    +pageIndex
+  );
+};
+const formatLastFileInLastFolderRecursiveUpdated = (
+  sourceFolder,
+  lastFile,
+  lastNumber,
+  sqrtNum
+) => {
+  const fileLines = fsReadFileSync(
+    `${sourceFolder}/${lastFile}`,
+    "utf-8"
+  ).split("\n");
+  const lastCount = fileLines.pop().replace("(", "").replace(")", "");
+  const dataBuffer = fileLines.join("\n");
+  const pageIndex = lastFile.replace("Output", "").replace(".txt", "");
+  lastNumber = findNextCandidate(lastNumber);
+  generatePrimesRecursiveUpdated(
     sqrtNum,
     lastNumber,
     dataBuffer,
@@ -364,6 +412,7 @@ export {
   generatePartitions,
   findCountsInFile,
   checkAndExplainPrimeStatus,
+  checkAndExplainPrimeStatusUpdated,
   filterLastFileData,
   copyPrimeDataToTarget,
   dataFromSelectedFile,
@@ -374,4 +423,5 @@ export {
   formatLastFileInLastFolder,
   formatLastFileInLastFolderRecursive,
   findNextCandidate,
+  formatLastFileInLastFolderRecursiveUpdated,
 };
