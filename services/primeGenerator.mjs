@@ -125,6 +125,18 @@ const generatePrimesInRangeUpdated = (start, end, partition = "1") => {
   }
   return primesInRange;
 };
+const generatePrimesInRangeTextFiles = (start, end, partition = "1") => {
+  const primesInRange = [];
+  let current = start;
+  while (findMax(current, end) !== current || current === end) {
+    if (isPrimeFromTextFilesRecursive(current, partition)) {
+      console.log(`${current} is a prime number`);
+      primesInRange.push(current);
+    }
+    current = findNextCandidate(current);
+  }
+  return primesInRange;
+};
 
 /**
  * Generates prime output data based on existing text files.
@@ -264,4 +276,5 @@ export {
   generatePrimeOutputFromText,
   generatePrimesUpToRecursive,
   generatePrimesUpToRecursiveUpdated,
+  generatePrimesInRangeTextFiles,
 };
