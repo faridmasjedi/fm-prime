@@ -7,9 +7,7 @@ import {
   sqrtFloor,
 } from "./mathOperations.mjs";
 import {
-  checkDivisorFromFiles,
   checkDivisorsFromFiles,
-  findPrimeFactor,
   isDivisor,
   isPrime,
   isPrimeFromTextFilesRecursiveUpdated,
@@ -116,9 +114,6 @@ const calculateDivisorsUsingText = (num) => {
 
 // Export the updated methods
 export {
-  checkDivisorFromFiles, // Check if a single divisor exists in files
-  checkDivisorsFromFiles, // Check all divisors for a number using files
-  findPrimeFactor, // Find the smallest prime factor of a number
   calculateDivisors, // Calculate divisors using prime factorization
   calculateDivisorsUpdated, // Calculate divisors using prime factorization | quicker
   calculateDivisorsUsingText, // Calculate divisors using pre-generated text files
