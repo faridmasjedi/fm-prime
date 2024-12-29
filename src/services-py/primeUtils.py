@@ -1,5 +1,17 @@
-from textUtils import *
-from prime import *
+from textUtils import (
+    create_folder,
+    write_data_to_file,
+    sort_files_by_numeric_suffix,
+    find_folder_for_number,
+    find_file_for_number,
+    find_files_up_to_number,
+    file_contains_text,
+    copy_file,
+    num_folder_exist,
+    write_text_file,
+    list_files_and_folders,
+)
+from prime import is_prime
 import os
 
 folder_path = "output-big"
@@ -224,9 +236,6 @@ def generate_primes_up_to(
     return count
 
 
-########
-
-
 def filter_line_data(line, num, last_count=""):
     """
     Filters a line of prime numbers based on a given number and updates count information.
@@ -394,7 +403,6 @@ def generate_prime_output_from_text(num, get_dirs_func=list_files_and_folders):
     :param get_dirs_func: Function to retrieve directories (default: list_files_and_folders).
     :return: Status message.
     """
-    source = "output-big"
     source_folder = get_last_prime_folder()
     folder_number = int(source_folder.replace("output-big/", "").replace("output-", ""))
     if int(folder_number) < num:

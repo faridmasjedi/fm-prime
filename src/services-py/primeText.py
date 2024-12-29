@@ -1,8 +1,27 @@
-import math
-from primeUtils import *
-from prime import *
+from primeUtils import (
+    generate_primes_up_to,
+    find_next_candidate,
+    get_proper_prime_folder,
+    check_divisor_from_files,
+    get_last_prime_folder,
+    num_folder_exist,
+    generate_prime_output_from_text,
+    copy_files_and_format_last_file,
+)
+
+from prime import (
+    primes_in_range,
+)
 
 PRIME_OUTPUT_FOLDER = "output-big"
+
+
+def prime_range(start, end):
+    return primes_in_range(start, end)
+
+
+def count_prime_in_range(start, end):
+    return primes_in_range(start, end, count_only=True)
 
 
 def generate_primes(number):
@@ -27,7 +46,7 @@ def check_divisor_not_exist_on_text_files(number, sqrt_number, current=2):
     return f"{number} is a prime number."
 
 
-def is_prime_from_text_files(num, source=folder_path):
+def is_prime_from_text_files(num, source=PRIME_OUTPUT_FOLDER):
     """
     Determines if a number is prime using prime data stored in text files.
 
@@ -98,3 +117,21 @@ def get_all_divisors(number):
 
     divisors.append(original_number)  # Include the number itself
     return sorted(divisors)
+
+
+def count_primes_up_to(limit):
+    """
+    Counts the number of prime numbers up to a given limit using the Sieve of Eratosthenes.
+
+    :param limit: The upper limit up to which primes are counted.
+    :return: The count of primes up to the given limit.
+    """
+    sieve = [True] * (limit + 1)
+    sieve[0] = sieve[1] = False  # 0 and 1 are not primes
+
+    for i in range(2, int(limit**0.5) + 1):
+        if sieve[i]:
+            for multiple in range(i * i, limit + 1, i):
+                sieve[multiple] = False
+
+    return sum(sieve)
