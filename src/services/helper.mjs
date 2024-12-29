@@ -69,18 +69,16 @@ const findNextCandidate = (current) => {
     2: "3", // After 2, the next prime is 3.
     3: "5", // After 3, the next prime is 5.
     else: (current) => {
-      const primeIndex1 = divideNumbers(addNumbers(current, "1"), "6");
-      const primeIndex2 = divideNumbers(subtractNumbers(current, "1"), "6");
-
+      const divide = divideNumbers(current, "6")
       // If current + 1 is divisible by 6, return current + 2
-      if (primeIndex1[1] === "0") return addNumbers(current, "2");
+      if (divide[1] === "5") return addNumbers(current, "2");
 
       // If current - 1 is divisible by 6, return current + 4
-      if (primeIndex2[1] === "0") return addNumbers(current, "4");
+      if (divide[1] === "1") return addNumbers(current, "4");
 
       // Default to 6k - 1 approach
       return subtractNumbers(
-        multiplyNumbers(addNumbers(primeIndex1[0], "1"), "6"),
+        multiplyNumbers(addNumbers(divide[0], "1"), "6"),
         "1"
       );
     },
