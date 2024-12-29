@@ -165,13 +165,11 @@ const generatePrimeOutputFromText = (
   num,
   getDirsFunc = getAllFromDirectory
 ) => {
+  if (numFolderExist(num)) return;
   const source = "./output-big";
   const largestOutput = findLargestOutputFolder(source, getDirsFunc);
   const sourceFolder = `${source}/${largestOutput}`;
   const folderNumber = largestOutput.split("-")[1];
-  if (folderNumber === num) {
-    return `Output for ${num} already exists.`;
-  }
   if (findMax(folderNumber, num) === num)
     return `${num} is greater than largest output`;
   const { lastFilteredData, folder, targetFileName } = copyAllPrimeOutputs(
