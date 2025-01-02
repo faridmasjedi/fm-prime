@@ -275,9 +275,11 @@ const power = (num, exp) => {
   if (typeof num !== "string" || typeof exp !== "string") {
     return "Inputs should be strings.";
   }
-
-  let result = "1";
-  while (findMax(exp, "0") !== "0") {
+  if (num === "0" && exp !== "0") return "0"
+  if (num === "0" && exp === "0") return "Not defined."
+  if (num === "1" || exp === "0") return "1"
+  let result = num;
+  while (findMax(exp, "1") !== "1") {
     result = multiplyNumbers(result, num);
     exp = subtractNumbers(exp, "1");
   }
