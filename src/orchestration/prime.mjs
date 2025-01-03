@@ -48,3 +48,7 @@ import {
   generatePrimesUpTo, // Main 3 ( take too much time | This will create primes from first prime)
   generatePrimesUpToUpdated, // Main 3-1 ( take too much time | This will create primes from first prime | quicker than generatePrimesUpTo)
 } from "../services/primeGenerator.mjs";
+
+import { 
+  calculatePrimesText // Quickest method
+} from "../services/primeIndex.mjs";
