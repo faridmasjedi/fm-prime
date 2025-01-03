@@ -296,11 +296,7 @@ const calculatePrimesText = (number) => {
   calculateRemainedPrimes(number, numFolder, primes);
 };
 
-// console.log(calculatePrimesText("1400000"));
-//////
-// const arr = ["1000000", "1200000", "1400000", "1`0000000"]
-// const arr = ["10", "100", "1000", "10000", "100000", "200000", "500000", "600000", "900000"]
-// arr.forEach(num => console.log(num, '\n',calculatePrimesText(num), '\n=========='))
-/////
-// calculatePrimes("1000000")
-// console.log(readNotPrimeIndexesFromFile(`not-prime-indexes/output-900000/OutputPrimes-71274.txt`))
+
+export {
+  calculatePrimesText
+}
