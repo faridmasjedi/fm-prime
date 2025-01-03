@@ -1,2 +1,4 @@
 /// Need to use hashmaps instaed of arrays
 /// what if we convert all numbers to number 6
+/// What if we make a primeGenerator method to create an object output with index of that prime.
+/// What if we draw the line for each integer value of kk in equation like: (n-k)/(6k+1) = kk
