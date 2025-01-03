@@ -4,7 +4,6 @@ import {
   findMax,
   multiplyNumbers,
   power,
-  sqrtFloor,
   subtractNumbers,
 } from "./mathOperations.mjs";
 import {
@@ -16,11 +15,8 @@ import {
 import {
   existsSync as fsExistsSync,
   mkdirSync as fsMkdirSync,
-  writeFileSync as fsWriteFileSync,
-  readdirSync as fsReadDirSync,
   readFileSync as fsReadFileSync,
 } from "fs";
-import { execSync } from "child_process";
 
 const multiplyBy6 = (p) => multiplyNumbers(p, "6");
 
