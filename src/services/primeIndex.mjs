@@ -138,7 +138,7 @@ const findDuplication = (number, filename) => {
  * @param {string} number - Upper limit for indices generation.
  * @returns {Object} - Contains indices for patterns one and two.
  */
-const generateNotPrimeIndexes = (number, k2="0", t = "1") => {
+const generateNotPrimeIndexes = (number, k2 = "0", t = "1") => {
   const numFolder = `./not-prime-indexes/output-${number}`;
   const patternOneFile = `${numFolder}/OutputPattern1.txt`;
   const patternTwoFile = `${numFolder}/OutputPattern2.txt`;
@@ -146,8 +146,6 @@ const generateNotPrimeIndexes = (number, k2="0", t = "1") => {
   let patternOneIndex = readNotPrimeIndexesFromFile(patternOneFile);
   let patternTwoIndex = readNotPrimeIndexesFromFile(patternTwoFile);
 
-  // let k2 = "0";
-  // let t = "1";
   let indices = calculateNonPrimeIndices(k2, t);
   let minIndex = indices["1"];
   const maxIndex = divideNumbers(addNumbers(number, "1"), "6")[0];
@@ -261,7 +259,6 @@ const copyFromOtherFolder = (number, rootFolder, numFolder) => {
         number
       );
   });
-  console.log(`--here 1) patternOneIndex: ${patternOneIndex.length}\npatternTwoIndex:${patternTwoIndex.length}\nprimes: ${primes.length} `)
   writeToFile(number, numFolder, patternOneIndex, "Pattern1");
   writeToFile(number, numFolder, patternTwoIndex, "Pattern2");
   writeToFile(number, numFolder, primes, `Primes-${primes.length}`);
@@ -269,42 +266,29 @@ const copyFromOtherFolder = (number, rootFolder, numFolder) => {
 };
 
 const copyFromLastFolder = (number, rootFolder, numFolder) => {
-  const lastFolder = findLargestOutputFolder(rootFolder, getAllFromDirectory )
-  const outputs = getAllFromDirectory(lastFolder);
-
-  let patternOneIndex, patternTwoIndex, primes;
-  outputs.forEach((filename) => {
-    if (filename.includes("OutputPattern1"))
-      patternOneIndex = readNotPrimeIndexesFromFile(
-        `${matchedFolder}/OutputPattern1.txt`
-      );
-
-    if (filename.includes("OutputPattern2"))
-      patternTwoIndex = readNotPrimeIndexesFromFile(
-        `${matchedFolder}/OutputPattern2.txt`
-      );
-
-    if (filename.includes("OutputPrimes"))
-      primes = readNotPrimeIndexesFromFile(`${matchedFolder}/${filename}`);
-  });
-
-  writeToFile(number, numFolder, patternOneIndex, "Pattern1");
-  writeToFile(number, numFolder, patternTwoIndex, "Pattern2");
-  // writeToFile(number, numFolder, primes, `Primes-${primes.length}`);
-  return {primes, patternOneIndex, patternTwoIndex, lastFolder} ;
+  const lastFolder = findLargestOutputFolder(rootFolder, getAllFromDirectory);
+  if (!lastFolder) return new Set(["2", "3"]);
+  const filename = getAllFromDirectory(`${rootFolder}/${lastFolder}`).find(
+    (filename) => filename.includes("OutputPrimes")
+  );
+  return readNotPrimeIndexesFromFile(`${rootFolder}/${lastFolder}/${filename}`);
 };
 
-const calculateRemainedPrimes = (number, index, primes) => {
-  const { patternOneIndex, patternTwoIndex, maxIndex } = generateNotPrimeIndexes(number, index)
-  let count = primes.length;
+const calculateRemainedPrimes = (number, numFolder, primes) => {
+  let index = "1";
+  const { patternOneIndex, patternTwoIndex, maxIndex } =
+    generateNotPrimeIndexes(number);
+  let count = primes.size;
 
   while (findMax(index, maxIndex) === maxIndex && index !== maxIndex) {
-    if (!patternOneIndex.has(index)) {
-      primes.add(addNumbers(multiplyBy6(index), "1"));
+    const patternOneNumber = addNumbers(multiplyBy6(index), "1");
+    const patternTwoNumber = subtractNumbers(multiplyBy6(index), "1");
+    if (!patternOneIndex.has(index) && !primes.has(patternOneNumber)) {
+      primes.add(patternOneNumber);
       count++;
     }
-    if (!patternTwoIndex.has(index)) {
-      primes.add(subtractNumbers(multiplyBy6(index), "1"));
+    if (!patternTwoIndex.has(index) && !primes.has(patternTwoNumber)) {
+      primes.add(patternTwoNumber);
       count++;
     }
     index = addNumbers(index, "1");
@@ -325,21 +309,23 @@ const calculateRemainedPrimes = (number, index, primes) => {
       count++;
     }
   }
-  console.log(`-here 3) primes: ${primes.length}`)
   writeToFile(number, numFolder, primes, `Primes-${count}`);
-}
+};
 
 const calculatePrimesText = (number) => {
   const rootFolder = "./not-prime-indexes";
   const numFolder = `${rootFolder}/output-${number}`;
   if (numFolderExist(numFolder)) return;
-  console.log('---here 1')
   if (copyFromOtherFolder(number, rootFolder, numFolder)) return;
-  console.log('--here 2')
-  let [primes, patternOneIndex, patternTwoIndex, lastFolder] = copyFromLastFolder(number, rootFolder, numFolder);
-  const lastFolderNumber = lastFolder.split('output-')[1]
-  console.log('-here 3')
-  calculateRemainedPrimes(number, lastFolderNumber, primes, patternOneIndex, patternTwoIndex)
-
+  const primes = copyFromLastFolder(number, rootFolder, numFolder);
+  calculateRemainedPrimes(number, numFolder, primes);
 };
-console.log(calculatePrimesText("200000"));
+
+// console.log(calculatePrimesText("1400000"));
+//////
+// const arr = ["1000000", "1200000", "1400000", "1`0000000"]
+// const arr = ["10", "100", "1000", "10000", "100000", "200000", "500000", "600000", "900000"]
+// arr.forEach(num => console.log(num, '\n',calculatePrimesText(num), '\n=========='))
+/////
+// calculatePrimes("100")
+// console.log(readNotPrimeIndexesFromFile(`not-prime-indexes/output-900000/OutputPrimes-71274.txt`))
