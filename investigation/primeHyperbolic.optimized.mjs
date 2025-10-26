@@ -45,14 +45,15 @@ export function divisionHyperbolic(numInput) {
   if (num % 2n === 0n) return '2';
   if (num % 3n === 0n) return '3';
 
-  const n = (num - 1n) / 6n;
   const trend = (num % 6n === 1n) ? 'first' : 'second';
 
   if (trend === 'first') {
-    // For 6n+1: Check (m - 3r)(m + 3r) = 6n+1
+    // For 6n+1: n = (num - 1) / 6
+    const n = (num - 1n) / 6n;
     return divisionFirstTrend(num, n);
   } else {
-    // For 6n-1: Check (3r - m)(3r + m) = 6n-1
+    // For 6n-1: n = (num + 1) / 6
+    const n = (num + 1n) / 6n;
     return divisionSecondTrend(num, n);
   }
 }
@@ -62,9 +63,12 @@ export function divisionHyperbolic(numInput) {
  * Checks if (m - 3r)(m + 3r) = 6n+1 has integer solutions
  */
 function divisionFirstTrend(num, n) {
+  // Check divisibility by 5 first
+  if (num % 5n === 0n) return '5';
+
   let r = 0n;
 
-  // Only need to check up to where 7*r <= n - 8
+  // First pattern: 7*r <= n - 8
   while (7n * r <= n - 8n) {
     // Check if m = √(9r² + 6n + 1) is an integer
     const discriminant = 9n * r * r + 6n * n + 1n;
@@ -82,21 +86,19 @@ function divisionFirstTrend(num, n) {
     r++;
   }
 
-  // Check second pattern: (m + 3r)(m - 3r) with different formula
-  r = 1n;
-  while (r * r <= n) {
-    const discriminant = 9n * r * r - 6n * n - 1n;
-    if (discriminant > 0n) {
-      const m = isqrt(discriminant);
+  // Second pattern: 5*r <= n - 4
+  r = 0n;
+  while (5n * r <= n - 4n) {
+    const discriminant = 9n * r * r + 6n * n + 1n;  // Same discriminant!
+    const m = isqrt(discriminant);
 
-      if (m * m === discriminant) {
-        const check = m + 3n * r + 1n;
+    if (m * m === discriminant) {
+      const check = m - 3n * r + 1n;  // Different: +1 instead of -1
 
-        if (check % 6n === 0n && check >= 6n) {
-          const divisor = check + 1n;
-          if (divisor < num) {
-            return divisor.toString();
-          }
+      if (check % 6n === 0n && check >= 6n && check + 3n * r - 1n >= 0n) {
+        const divisor = check - 1n;  // Returns check - 1
+        if (divisor < num && divisor > 1n) {
+          return divisor.toString();
         }
       }
     }
@@ -111,40 +113,56 @@ function divisionFirstTrend(num, n) {
  * Checks if (3r - m)(3r + m) = 6n-1 has integer solutions
  */
 function divisionSecondTrend(num, n) {
-  let r = 1n;
+  // Check divisibility by 5 first
+  if (num % 5n === 0n) return '5';
 
-  while (7n * r <= n + 2n) {
-    // Check if m = √(9r² - 6n + 1) is an integer
-    const discriminant = 9n * r * r - 6n * n + 1n;
+  const sqrtNum = isqrt(num);
+  const checkLimit = sqrtNum / 3n;
 
-    if (discriminant > 0n) {
-      const m = isqrt(discriminant);
+  let r = 0n;
 
-      if (m * m === discriminant) {
-        const check = 3n * r - m - 1n;
+  // First pattern: 7*r <= n + 8
+  while (7n * r <= n + 8n) {
+    if (r >= checkLimit) {
+      // Check if m = √(9r² - 6n + 1) is an integer
+      const discriminant = 9n * r * r - 6n * n + 1n;
 
-        if (check % 6n === 0n && check >= 6n && 3n * r >= m + 1n) {
-          const divisor = check + 1n;
-          return divisor.toString();
+      if (discriminant > 0n) {
+        const m = isqrt(discriminant);
+
+        if (m * m === discriminant) {
+          const check = m + 3n * r + 1n;
+
+          if (check % 6n === 0n && check >= 6n && 3n * r - check + 1n >= 0n) {
+            const divisor = check - 1n;
+            if (divisor < num && divisor > 1n) {
+              return divisor.toString();
+            }
+          }
         }
       }
     }
     r++;
   }
 
-  // Check second pattern
+  // Second pattern: 5*r <= n + 4
   r = 0n;
-  while (r * r <= n) {
-    const discriminant = 9n * r * r + 6n * n - 1n;
-    const m = isqrt(discriminant);
+  while (5n * r <= n + 4n) {
+    if (r >= checkLimit) {
+      const discriminant = 9n * r * r - 6n * n + 1n;
 
-    if (m * m === discriminant) {
-      const check = m - 3n * r - 1n;
+      if (discriminant > 0n) {
+        const m = isqrt(discriminant);
 
-      if (check % 6n === 0n && check >= 6n) {
-        const divisor = check + 1n;
-        if (divisor < num) {
-          return divisor.toString();
+        if (m * m === discriminant) {
+          const check = m + 3n * r - 1n;
+
+          if (check % 6n === 0n && check >= 6n && 3n * r - check - 1n >= 0n) {
+            const divisor = check + 1n;
+            if (divisor < num && divisor > 1n) {
+              return divisor.toString();
+            }
+          }
         }
       }
     }

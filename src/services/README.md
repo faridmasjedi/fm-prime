@@ -37,7 +37,8 @@ This directory contains JavaScript (ES6+ modules) implementations for prime numb
 - `mathOperations.optimized.mjs` - Optimized BigInt operations
 - `primeHybrid.optimized.mjs` - Hybrid 6k±1 + Sieve approach
 - `wheel210.optimized.mjs` - Wheel-210 factorization (23% candidates)
-- `primeHyperbolic.optimized.mjs` - Novel hyperbolic equation method
+
+**Note:** `primeHyperbolic.optimized.mjs` has been moved to `/investigation` folder due to known bugs. See investigation folder for details.
 
 ---
 
@@ -379,9 +380,11 @@ console.log(isPrimeWheel210("997"));  // true
 - Wheel-210: 22.9% candidates
 - **30% fewer tests than 6k±1!**
 
-### primeHyperbolic.optimized.mjs 🔍
+### ~~primeHyperbolic.optimized.mjs~~ 🔍 MOVED TO INVESTIGATION
 
-**Purpose**: Novel hyperbolic equation approach for primality testing
+**Status**: Moved to `/investigation` folder due to known bugs
+
+**Purpose**: Novel hyperbolic equation approach for primality testing (under investigation)
 
 **Mathematical Foundation**:
 
@@ -401,7 +404,9 @@ Equation: 9r² - m² = 6n-1
 Check: m = √(9r² - 6n + 1) must be integer
 ```
 
-**API**:
+⚠️ **WARNING**: Current implementation has bugs that produce false positives (incorrectly identifies composites as prime). Moved to `/investigation` for further research. **Do not use in production.** See `/investigation/README.md` for details.
+
+**API** (available in `/investigation/primeHyperbolic.optimized.mjs`):
 
 ```javascript
 divisionHyperbolic(num)           // Find smallest divisor
@@ -415,14 +420,14 @@ divisionSecondTrend(num, n)       // For 6n-1 numbers
 isqrt(n)                          // Integer square root (BigInt)
 ```
 
-**Example**:
+**Example** (from investigation folder):
 ```javascript
 import {
   divisionHyperbolic,
   isPrimeHyperbolic,
   factorizeHyperbolic,
   factorsToString
-} from './services/primeHyperbolic.optimized.mjs';
+} from '../investigation/primeHyperbolic.optimized.mjs';
 
 // Check primality
 console.log(isPrimeHyperbolic("143"));      // false (11 × 13)
@@ -466,7 +471,7 @@ Instead of doing trial division, we check if certain square roots are integers. 
 | **Optimized isPrime** | `primeChecker.optimized.mjs` | 33% (6k±1) | O(√n / 3) | 50x faster |
 | **Wheel-210** | `wheel210.optimized.mjs` | 23% | O(√n / 4.4) | Maximum speed |
 | **Hybrid** | `primeHybrid.optimized.mjs` | Variable | Auto-select | Convenience |
-| **Hyperbolic** | `primeHyperbolic.optimized.mjs` | 33% | O(√n) | Educational |
+| ~~**Hyperbolic**~~ | ~~`investigation/`~~ | ~~33%~~ | ~~O(√n)~~ | 🔍 Under investigation |
 
 ### Generation Performance
 
@@ -550,19 +555,7 @@ console.log(`Found ${twins.length} twin prime pairs`);
 const sophie = finder.findSophieGermainPrimesInRange("100", "1000");
 console.log(`Found ${sophie.length} Sophie Germain primes`);
 
-// 3. Hyperbolic approach (educational)
-import {
-  isPrimeHyperbolic,
-  factorizeHyperbolic,
-  factorsToString
-} from './services/primeHyperbolic.optimized.mjs';
-
-console.log(isPrimeHyperbolic("143"));  // false
-
-const factors = factorizeHyperbolic("143");
-console.log(factorsToString(factors));  // "11 × 13"
-
-// 4. File-based with detailed status
+// 3. File-based with detailed status
 import {
   isPrimeFromTextRecursiveUpdated
 } from './services/primeChecker.mjs';
@@ -704,8 +697,9 @@ primeOutput/
 3. **For single checks**: Use `isPrimeOptimized()` or `isPrimeWheel210()`
 4. **For convenience**: Use `HybridPrimeFinder` (auto-selects best method)
 5. **For persistent storage**: Use file-based methods from original modules
-6. **For education**: Explore `primeHyperbolic.optimized.mjs`
-7. **BigInt operations**: Always use `.optimized.mjs` math operations
+6. **BigInt operations**: Always use `.optimized.mjs` math operations
+
+⚠️ **Note**: `primeHyperbolic.optimized.mjs` has been moved to `/investigation` due to known bugs. Not recommended for use.
 
 ### Optimization Impact
 
@@ -753,9 +747,6 @@ primeHybrid.optimized.mjs
 
 wheel210.optimized.mjs
     └── primeChecker.optimized.mjs ✓
-
-primeHyperbolic.optimized.mjs
-    └── (standalone, uses BigInt)
 
 helper.optimized.mjs
     ├── mathOperations.optimized.mjs ✓

@@ -7,7 +7,6 @@ import { isPrimeOptimized, millerRabinTest } from './src/services/primeChecker.o
 import { findNextCandidate } from './src/services/helper.optimized.mjs';
 import { sieve6kOptimized, Wheel30 } from './src/services/primeHybrid.optimized.mjs';
 import { Wheel210, sieveWheel210 } from './src/services/wheel210.optimized.mjs';
-import { isPrimeHyperbolic, divisionHyperbolic } from './src/services/primeHyperbolic.optimized.mjs';
 
 // ============================================================================
 // TEST DATA
@@ -74,18 +73,6 @@ results = testMethod(
   (n) => millerRabinTest(n.toString(), 5),
   [...mediumPrimes, ...mediumComposites],
   [...Array(mediumPrimes.length).fill(true), ...Array(mediumComposites.length).fill(false)]
-);
-console.log(`  ✓ Passed: ${results.passed}/${results.passed + results.failed}`);
-
-// Test Hyperbolic (for smaller numbers where it works)
-console.log('\nTesting Hyperbolic Equations...');
-const hyperbolicTestNums = [101, 143, 221, 323, 1517];
-const hyperbolicExpected = [true, false, false, false, true];
-results = testMethod(
-  'isPrimeHyperbolic',
-  isPrimeHyperbolic,
-  hyperbolicTestNums,
-  hyperbolicExpected
 );
 console.log(`  ✓ Passed: ${results.passed}/${results.passed + results.failed}`);
 

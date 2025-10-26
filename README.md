@@ -29,7 +29,7 @@ This repository includes multiple approaches to prime number computation:
 3. **Wheel-210** - Tests only 23% of numbers (eliminates multiples of 2, 3, 5, 7)
 4. **Miller-Rabin** - Probabilistic test for very large primes
 5. **Sieve of Eratosthenes** - Bulk generation of all primes up to N
-6. **Hyperbolic Equation Method** - Novel algebraic approach ⭐
+6. **Hyperbolic Equation Method** - 🔍 Under investigation (has known bugs)
 
 ---
 
@@ -38,7 +38,6 @@ This repository includes multiple approaches to prime number computation:
 ### For Single Prime Checks
 - **Small numbers (<10⁶)**: Use 6k±1 trial division
 - **Large numbers (>10⁶)**: Use Miller-Rabin test
-- **Educational**: Use Hyperbolic Equation approach
 
 ### For Bulk Prime Generation
 - **Small ranges (<10K)**: Use 6k±1 Sieve
@@ -188,6 +187,16 @@ For 6n+1:
 - Distribution of (r, m) pairs
 - Optimization of solution search
 
+### ⚠️ Current Status
+
+**Implementation moved to `/investigation` folder for further research.**
+
+The current implementation has known bugs that cause false positives:
+- Incorrectly identifies 77 (7×11), 143 (11×13), and 45+ other composites as prime
+- Accuracy: ~78% for numbers < 1,000 (47 false positives out of 168 expected primes)
+
+**Not recommended for production use.** See `/investigation/README.md` for details and ongoing research.
+
 ---
 
 ## Quick Start
@@ -270,7 +279,7 @@ python analyze-hyperbolic-patterns.py   # Text analysis
 | Wheel-210 | 23% | Maximum performance |
 | Sieve | 23-33% | Bulk generation |
 | Miller-Rabin | Variable | Very large numbers |
-| Hyperbolic | 33% | Educational, research |
+| Hyperbolic | 33% | 🔍 Under investigation (not recommended) |
 
 ---
 

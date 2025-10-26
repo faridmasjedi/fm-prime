@@ -228,7 +228,7 @@ export function primesInRangeWheel210(start, end) {
 /**
  * Benchmark wheels: 6k±1, Wheel-30, Wheel-210
  */
-export function benchmarkWheels(limit = "100000") {
+export async function benchmarkWheels(limit = "100000") {
   const numLimit = Number(limit);
   const results = {};
 
