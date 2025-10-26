@@ -1,143 +1,557 @@
-# Prime Number Analysis and Generator Module
+# Prime Number Orchestration Layer
+
+JavaScript orchestration module that imports and organizes all prime number service functions for easy access and method selection.
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Available Methods](#available-methods)
+- [Method Classification](#method-classification)
+- [Performance Hierarchy](#performance-hierarchy)
+- [Quick Selection Guide](#quick-selection-guide)
+- [Usage Examples](#usage-examples)
 
 ---
 
 ## Overview
 
-This module provides a comprehensive suite of functions and utilities for prime number analysis, primality testing, prime generation, and divisor calculations. Designed for efficiency, it includes various optimized and recursive methods to handle large-scale computations and file-based datasets.
+The orchestration layer (`prime.mjs`) serves as the **central hub** for all prime number operations. It imports functions from multiple service modules and provides:
+
+1. **Organized Access**: All methods grouped by functionality
+2. **Clear Performance Indicators**: Methods labeled by speed (Main 1, Main 2, etc.)
+3. **Progressive Optimization**: Multiple versions of same functionality (original, updated, recursive)
+4. **Method Selection Guidance**: Comments indicate which methods to use
 
 ---
 
-## Features
+## Architecture
 
-### Primality Testing
-- **Basic Primality Tests**:
-  - `isPrime`: Standard method for primality checking, slower for large numbers.
-  - `isPrimeUsingFiles`: Uses pre-existing prime data files for quicker checks.
-  - `isPrimeFromTextFiles`: Leverages file-based prime datasets for efficient primality tests.
-- **Advanced Recursive Primality**:
-  - `isPrimeFromTextFilesRecursive`: Efficient recursive approach for large datasets.
-  - `isPrimeFromTextRecursive`: Combines file-based data with recursive logic for enhanced performance.
-  - `isPrimeFromTextFilesRecursiveUpdated`: An optimized version of recursive checks for quicker results.
+### Import Structure
 
-### Divisor Calculation
-- **Divisor Analysis**:
-  - `calculateDivisors`: Finds divisors using prime patterns.
-  - `calculateDivisorsUsingText`: Utilizes file-based datasets for efficient divisor calculations.
-  - `calculateDivisorsUpdated`: Optimized version of `calculateDivisors` for faster results.
+```
+prime.mjs (Orchestration Layer)
+    │
+    ├── helper.mjs
+    │   ├── checkAndExplainPrimeStatus
+    │   └── checkAndExplainPrimeStatusUpdated ⚡
+    │
+    ├── primeChecker.mjs
+    │   ├── isPrime
+    │   ├── isPrimeUsingFiles ⚡
+    │   ├── isPrimeFromTextFiles ⚡⚡
+    │   ├── isPrimeFromTextFilesRecursive ⚡⚡⚡
+    │   └── ... (10+ variants)
+    │
+    ├── primeGenerator.mjs
+    │   ├── generatePrimesUpTo
+    │   ├── generatePrimesInRange
+    │   ├── generatePrimesRecursiveUpdated ⚡⚡⚡
+    │   └── ... (14+ variants)
+    │
+    ├── numberDivisors.mjs
+    │   ├── calculateDivisors
+    │   └── calculateDivisorsUsingText ⚡⚡
+    │
+    └── primeIndex.mjs
+        └── calculatePrimesText ⚡⚡⚡
+```
 
-### Prime Generation
-- **Generate Primes in a Range**:
-  - `generatePrimesInRange`: Generates primes within a given range using iterative methods.
-  - `generatePrimesInRangeUpdated`: Faster version of `generatePrimesInRange`.
-  - `generatePrimesInRangeTextFiles`: Leverages file-based datasets for range generation.
-  - `generatePrimesInRangeTextFilesUpdated`: Optimized file-based range generation.
+### Service Layer Organization
 
-- **Generate Primes Up to a Limit**:
-  - `generatePrimesUpTo`: Iterative prime generation up to a specified number.
-  - `generatePrimesUpToUpdated`: Optimized version of `generatePrimesUpTo`.
-  - `generatePrimesUpToRecursive`: Recursive method for prime generation starting from 2.
-  - `generatePrimesUpToRecursiveUpdated`: Faster recursive prime generation.
-  - `generatePrimesRecursiveUpdated`: The quickest method for recursive generation.
+The orchestration imports from four main service modules:
 
-- **File-Based Prime Generation**:
-  - `generatePrimeOutputFromText`: Creates output files for primes based on existing datasets.
-  - `generatePrimesFiles`: Automatically creates prime datasets for specified limits.
-  - `generatePrimesFilesUpdated`: Optimized version of `generatePrimesFiles`.
-
-### Quick Primality and Divisor Checks
-- `checkAndExplainPrimeStatus`: Provides detailed explanations of primality.
-- `checkAndExplainPrimeStatusUpdated`: Faster version for primality checks and explanations.
-
-### Fast Prime Index Calculation
-- `calculatePrimesText`: The quickest method for determining prime indices, leveraging all optimizations.
+1. **helper.mjs** - Prime status checking and explanation
+2. **primeChecker.mjs** - Primality testing (10+ methods)
+3. **primeGenerator.mjs** - Prime generation (14+ methods)
+4. **numberDivisors.mjs** - Divisor calculation (3 methods)
+5. **primeIndex.mjs** - Prime index calculation (1 method)
 
 ---
 
-## Key Methods and Optimizations
+## Available Methods
 
-1. **Recursive Algorithms**:
-   - Methods like `isPrimeFromTextFilesRecursive` and `generatePrimesRecursiveUpdated` use recursion and file-based datasets for large-scale computations.
+### 1. Prime Status Checking (helper.mjs)
 
-2. **File-Based Datasets**:
-   - Methods like `isPrimeFromTextFiles` and `generatePrimeOutputFromText` rely on pre-existing datasets, minimizing redundant computations.
+| Method | Speed | Description |
+|--------|-------|-------------|
+| `checkAndExplainPrimeStatus` | **Main 6** ⚡ | Checks existing files, falls back to isPrime |
+| `checkAndExplainPrimeStatusUpdated` | **Main 6-1** ⚡⚡ | Faster version of above |
 
-3. **Optimized Divisor Calculations**:
-   - Functions like `calculateDivisorsUsingText` utilize existing files to speed up divisor analysis.
+**Use Case**: Get detailed explanation of whether a number is prime
 
-4. **Partitioned Prime Checks**:
-   - Methods like `generatePrimesInRangeUpdated` divide computations into manageable partitions for better performance.
-
----
-
-## Usage
-
-### Primality Testing
-Check if a number is prime with detailed explanations:
+**Example**:
 ```javascript
-import { checkAndExplainPrimeStatusUpdated } from "../services/helper.mjs";
+import { checkAndExplainPrimeStatusUpdated } from "./orchestration/prime.mjs";
 
 const result = checkAndExplainPrimeStatusUpdated("997");
-console.log(result); // Outputs whether the number is prime or not with details
+console.log(result); // Detailed explanation with divisor info
 ```
 
----
+### 2. Primality Testing (primeChecker.mjs)
 
-## Prime Generation
-Generate all primes up to a number:
+| Method | Speed | Description | Recommendation |
+|--------|-------|-------------|----------------|
+| `isPrime` | **Main 1** 🐢 | Basic primality (6k±1) | ❌ Don't use (slow) |
+| `isPrimeUsingFiles` | **Main 5** ⚡ | Uses pre-existing files | ⚠️ Limited by file availability |
+| `isPrimeUsingFilesUpdated` | **Main 5-1** ⚡ | Faster file-based | ⚠️ Limited by file availability |
+| `isPrimeFromText` | **Main 9** ⚡⚡ | Creates folders if needed | ✅ Good for persistent data |
+| `isPrimeFromTextFiles` | **Main 10** ⚡⚡ | Checks without creating folders | ✅ Good balance |
+| `isPrimeFromTextFilesUpdated` | **Main 10-1** ⚡⚡ | Faster version | ✅ Recommended |
+| `isPrimeFromTextFilesRecursive` | **Main 11** ⚡⚡⚡ | Recursive file checking | ✅✅ Very fast |
+| `isPrimeFromTextFilesRecursiveUpdated` | **Main 11-1** ⚡⚡⚡ | Fastest recursive | ✅✅ Highly recommended |
+| `isPrimeFromTextRecursive` | **Main 12** ⚡⚡⚡ | Recursive with folder creation | ✅✅ Most complete |
+| `isPrimeFromTextRecursiveUpdated` | **Main 12-1** ⚡⚡⚡ | Fastest complete version | ✅✅✅ **Best choice** |
+
+**Best Practices**:
+- For **√n < existing files**: All file-based methods are instant
+- For **√n > existing files**: Use recursive/updated versions
+- **Don't use** basic `isPrime` (too slow for large numbers)
+
+**Example**:
 ```javascript
-import { generatePrimesUpToUpdated } from "../services/primeGenerator.mjs";
+import { isPrimeFromTextFilesRecursiveUpdated } from "./orchestration/prime.mjs";
 
-generatePrimesUpToUpdated("100000");
+console.log(isPrimeFromTextFilesRecursiveUpdated("999983")); // true
 ```
 
----
+### 3. Prime Generation (primeGenerator.mjs)
 
-## Divisor Calculation
-Calculate divisors using file-based datasets:
+#### Generate Up To N
+
+| Method | Speed | Description | Recommendation |
+|--------|-------|-------------|----------------|
+| `generatePrimesUpTo` | **Main 3** 🐢 | From first prime | ❌ Very slow |
+| `generatePrimesUpToUpdated` | **Main 3-1** 🐢 | Slightly faster | ❌ Still slow |
+| `generatePrimesUpToRecursive` | **Main 13** ⚡ | Recursive from 2 | ⚠️ Better but not best |
+| `generatePrimesUpToRecursiveUpdated` | **Main 13-1** ⚡⚡ | Faster recursive | ✅ Good |
+| `generatePrimesRecursiveUpdated` | **Main 13-2** ⚡⚡⚡ | Fastest recursive | ✅✅✅ **Best choice** |
+
+#### Generate In Range
+
+| Method | Speed | Description | Recommendation |
+|--------|-------|-------------|----------------|
+| `generatePrimesInRange` | **Main 4** 🐢 | Basic range generation | ❌ Slow |
+| `generatePrimesInRangeUpdated` | **Main 4-1** 🐢 | Slightly faster | ⚠️ Still not optimal |
+| `generatePrimesInRangeTextFiles` | **Main 4-2** ⚡ | Uses text files | ✅ Better |
+| `generatePrimesInRangeTextFilesUpdated` | **Main 4-3** ⚡⚡ | Faster file-based | ✅✅ **Recommended** |
+
+#### File-Based Generation
+
+| Method | Speed | Description | Recommendation |
+|--------|-------|-------------|----------------|
+| `generatePrimeOutputFromText` | **Main 7** ⚡⚡ | Only if N < existing max | ✅ Quick for small N |
+| `generatePrimesFiles` | **Main 14** ⚡⚡⚡ | Creates all necessary files | ✅✅ Very efficient |
+| `generatePrimesFilesUpdated` | **Main 14-1** ⚡⚡⚡ | Fastest file generation | ✅✅✅ **Best choice** |
+
+**Best Practices**:
+- For **bulk generation up to N**: Use `generatePrimesRecursiveUpdated`
+- For **range [a, b]**: Use `generatePrimesInRangeTextFilesUpdated`
+- For **creating persistent files**: Use `generatePrimesFilesUpdated`
+- **Avoid** non-updated iterative methods
+
+**Example**:
 ```javascript
-import { calculateDivisorsUsingText } from "../services/numberDivisors.mjs";
+import {
+    generatePrimesRecursiveUpdated,
+    generatePrimesInRangeTextFilesUpdated,
+    generatePrimesFilesUpdated
+} from "./orchestration/prime.mjs";
+
+// Generate all primes up to 10,000
+generatePrimesRecursiveUpdated("10000");
+
+// Generate primes in range [1000, 2000]
+const rangeprimes = generatePrimesInRangeTextFilesUpdated("1000", "2000");
+
+// Create persistent files
+generatePrimesFilesUpdated("100000");
+```
+
+### 4. Divisor Calculation (numberDivisors.mjs)
+
+| Method | Speed | Description | Recommendation |
+|--------|-------|-------------|----------------|
+| `calculateDivisors` | **Main 2** 🐢 | Checks from first divisor | ❌ Slow |
+| `calculateDivisorsUpdated` | **Main 2-1** 🐢 | Slightly faster | ⚠️ Still not optimal |
+| `calculateDivisorsUsingText` | **Main 8** ⚡⚡ | Uses file-based √n check | ✅✅✅ **Best choice** |
+
+**Best Practice**: Always use `calculateDivisorsUsingText` for efficiency
+
+**Example**:
+```javascript
+import { calculateDivisorsUsingText } from "./orchestration/prime.mjs";
 
 const divisors = calculateDivisorsUsingText("100");
-console.log(divisors); // Outputs divisors of the number
-
+console.log(divisors); // All divisors of 100
 ```
 
----
+### 5. Prime Index Calculation (primeIndex.mjs)
 
-## Fastest Prime Calculation
-Quickly calculate primes using the most optimized method:
+| Method | Speed | Description | Recommendation |
+|--------|-------|-------------|----------------|
+| `calculatePrimesText` | **⚡⚡⚡** | Fastest prime index method | ✅✅✅ **Quickest** |
+
+**Use Case**: Calculate prime indices leveraging all optimizations
+
+**Example**:
 ```javascript
-import { calculatePrimesText } from "../services/primeIndex.mjs";
+import { calculatePrimesText } from "./orchestration/prime.mjs";
 
 calculatePrimesText("1000000");
 ```
 
 ---
 
-## Performance Comparison
+## Method Classification
 
-## Performance Comparison
+### By Performance Tier
 
-| **Method**                                | **Description**                                             | **Speed**       |
-|-------------------------------------------|-------------------------------------------------------------|-----------------|
-| `isPrime`                                 | Basic primality check                                       | Slow            |
-| `isPrimeUsingFiles`                       | Uses file-based datasets                                    | Faster          |
-| `isPrimeFromTextFilesRecursiveUpdated`    | Combines recursive and file-based approaches               | Fastest         |
-| `generatePrimesUpTo`                      | Iterative generation of primes                             | Slow            |
-| `generatePrimesRecursiveUpdated`          | Optimized recursive generation                              | Fastest         |
-| `calculateDivisors`                       | Finds divisors using prime patterns                        | Slow            |
-| `calculateDivisorsUsingText`              | File-based divisor calculation                              | Fastest         |
-| `calculatePrimesText`                     | Combines all optimizations for prime generation            | Fastest         |
+#### 🐢 Tier 1 - Basic (Avoid in Production)
+- `isPrime`
+- `generatePrimesUpTo`
+- `generatePrimesInRange`
+- `calculateDivisors`
+
+**Characteristics**: Basic 6k±1 pattern, no file optimization
+**Use Case**: Educational purposes only
+
+#### ⚡ Tier 2 - File-Based (Good)
+- `isPrimeUsingFiles`
+- `isPrimeFromTextFiles`
+- `generatePrimeOutputFromText`
+- `generatePrimesInRangeTextFiles`
+
+**Characteristics**: Leverages pre-computed files, no folder creation
+**Use Case**: When files exist up to √n
+
+#### ⚡⚡ Tier 3 - Advanced File-Based (Better)
+- `isPrimeFromTextFilesUpdated`
+- `calculateDivisorsUsingText`
+- `generatePrimesInRangeTextFilesUpdated`
+- `generatePrimesFiles`
+
+**Characteristics**: Optimized file operations, efficient algorithms
+**Use Case**: General production use
+
+#### ⚡⚡⚡ Tier 4 - Recursive/Optimized (Best)
+- `isPrimeFromTextFilesRecursive`
+- `isPrimeFromTextFilesRecursiveUpdated`
+- `isPrimeFromTextRecursiveUpdated`
+- `generatePrimesRecursiveUpdated`
+- `generatePrimesFilesUpdated`
+- `calculatePrimesText`
+
+**Characteristics**: Recursive algorithms, maximum optimization
+**Use Case**: Performance-critical applications
+
+### By Functionality
+
+#### Primality Testing
+- **Fastest Overall**: `isPrimeFromTextRecursiveUpdated`
+- **Without Folder Creation**: `isPrimeFromTextFilesRecursiveUpdated`
+- **With File Availability**: `isPrimeUsingFilesUpdated`
+
+#### Prime Generation
+- **Up to N**: `generatePrimesRecursiveUpdated`
+- **In Range [a, b]**: `generatePrimesInRangeTextFilesUpdated`
+- **Create Files**: `generatePrimesFilesUpdated`
+
+#### Divisors
+- **Only Choice**: `calculateDivisorsUsingText`
+
+#### Prime Indices
+- **Only Choice**: `calculatePrimesText`
 
 ---
 
-## Contributors
+## Performance Hierarchy
 
-- Primary Developer: [Farid Masjedi](https://github.com/faridmasjedi)
+### Primality Testing Evolution
 
-## Versions
+```
+isPrime (Main 1)
+    ↓ +File checking
+isPrimeUsingFiles (Main 5)
+    ↓ +Optimization
+isPrimeUsingFilesUpdated (Main 5-1)
+    ↓ +Text file integration
+isPrimeFromTextFiles (Main 10)
+    ↓ +Optimization
+isPrimeFromTextFilesUpdated (Main 10-1)
+    ↓ +Recursion
+isPrimeFromTextFilesRecursive (Main 11)
+    ↓ +Optimization
+isPrimeFromTextFilesRecursiveUpdated (Main 11-1)
+    ↓ +Folder creation
+isPrimeFromTextRecursive (Main 12)
+    ↓ +Optimization
+isPrimeFromTextRecursiveUpdated (Main 12-1) ← FASTEST
+```
 
-- Version 1
-    
-    - Last Update: 03.12.2024
+### Generation Evolution
+
+```
+generatePrimesUpTo (Main 3)
+    ↓ +Optimization
+generatePrimesUpToUpdated (Main 3-1)
+    ↓ +Recursion
+generatePrimesUpToRecursive (Main 13)
+    ↓ +Optimization
+generatePrimesUpToRecursiveUpdated (Main 13-1)
+    ↓ +Further optimization
+generatePrimesRecursiveUpdated (Main 13-2) ← FASTEST
+```
+
+---
+
+## Quick Selection Guide
+
+### Decision Tree
+
+```
+Need to check if N is prime?
+│
+├─ √N < existing file limit?
+│  └─ YES → isPrimeUsingFilesUpdated (instant)
+│  └─ NO  → Continue below
+│
+├─ Need to create folders?
+│  └─ YES → isPrimeFromTextRecursiveUpdated
+│  └─ NO  → isPrimeFromTextFilesRecursiveUpdated
+│
+└─ Performance critical?
+   └─ YES → Use recursive/updated versions
+   └─ NO  → Regular file-based methods OK
+
+Need to generate primes?
+│
+├─ All primes up to N?
+│  └─ generatePrimesRecursiveUpdated
+│
+├─ Primes in range [a, b]?
+│  └─ generatePrimesInRangeTextFilesUpdated
+│
+└─ Create persistent files?
+   └─ generatePrimesFilesUpdated
+
+Need divisors of N?
+└─ calculateDivisorsUsingText (only good option)
+
+Need prime indices?
+└─ calculatePrimesText (fastest method)
+```
+
+### Recommendations by Use Case
+
+#### Web Application (Performance Critical)
+```javascript
+import {
+    isPrimeFromTextFilesRecursiveUpdated,
+    generatePrimesRecursiveUpdated,
+    calculateDivisorsUsingText
+} from "./orchestration/prime.mjs";
+```
+
+#### Batch Processing (File Generation)
+```javascript
+import {
+    generatePrimesFilesUpdated,
+    calculatePrimesText
+} from "./orchestration/prime.mjs";
+```
+
+#### Data Analysis (Range Queries)
+```javascript
+import {
+    generatePrimesInRangeTextFilesUpdated,
+    isPrimeFromTextFilesRecursiveUpdated
+} from "./orchestration/prime.mjs";
+```
+
+#### Educational (Understanding Algorithms)
+```javascript
+import {
+    isPrime,
+    generatePrimesUpTo,
+    checkAndExplainPrimeStatus
+} from "./orchestration/prime.mjs";
+```
+
+---
+
+## Usage Examples
+
+### Example 1: Check Prime Status with Explanation
+
+```javascript
+import { checkAndExplainPrimeStatusUpdated } from "./orchestration/prime.mjs";
+
+const status = checkAndExplainPrimeStatusUpdated("997");
+console.log(status);
+// Output: Detailed explanation of primality with divisor information
+```
+
+### Example 2: High-Performance Primality Testing
+
+```javascript
+import { isPrimeFromTextRecursiveUpdated } from "./orchestration/prime.mjs";
+
+// Test multiple numbers efficiently
+const numbers = ["999983", "1000000", "1000003", "1000033"];
+
+for (const num of numbers) {
+    const result = isPrimeFromTextRecursiveUpdated(num);
+    console.log(`${num}: ${result ? "PRIME" : "NOT PRIME"}`);
+}
+```
+
+### Example 3: Generate Primes in Range
+
+```javascript
+import { generatePrimesInRangeTextFilesUpdated } from "./orchestration/prime.mjs";
+
+// Find all primes between 10,000 and 20,000
+const primes = generatePrimesInRangeTextFilesUpdated("10000", "20000");
+console.log(`Found ${primes.length} primes in range`);
+console.log(`First 10: ${primes.slice(0, 10).join(", ")}`);
+```
+
+### Example 4: Create Prime Database
+
+```javascript
+import { generatePrimesFilesUpdated } from "./orchestration/prime.mjs";
+
+// Generate and store all primes up to 1,000,000
+console.log("Generating primes up to 1,000,000...");
+generatePrimesFilesUpdated("1000000");
+console.log("Complete! Files created for fast future lookups.");
+```
+
+### Example 5: Calculate All Divisors
+
+```javascript
+import { calculateDivisorsUsingText } from "./orchestration/prime.mjs";
+
+const number = "1000";
+const divisors = calculateDivisorsUsingText(number);
+
+console.log(`Divisors of ${number}:`);
+console.log(divisors.join(", "));
+console.log(`Total: ${divisors.length} divisors`);
+```
+
+### Example 6: Batch Prime Generation
+
+```javascript
+import { generatePrimesRecursiveUpdated } from "./orchestration/prime.mjs";
+
+// Generate primes for multiple ranges
+const ranges = ["10000", "50000", "100000", "500000"];
+
+for (const limit of ranges) {
+    console.log(`Generating primes up to ${limit}...`);
+    const startTime = Date.now();
+
+    generatePrimesRecursiveUpdated(limit);
+
+    const elapsed = Date.now() - startTime;
+    console.log(`  ✓ Complete in ${elapsed}ms`);
+}
+```
+
+---
+
+## File-Based Storage
+
+The orchestration layer supports file-based prime storage for performance optimization:
+
+### Folder Structure
+
+```
+primeOutput/
+├── prime_1000/
+│   ├── prime_1.txt
+│   ├── prime_2.txt
+│   └── ...
+├── prime_10000/
+│   ├── prime_1.txt
+│   ├── prime_2.txt
+│   └── ...
+└── prime_100000/
+    ├── prime_1.txt
+    ├── prime_2.txt
+    └── ...
+```
+
+### Benefits
+
+1. **Instant Lookups**: If √n < largest folder, primality check is O(1)
+2. **Persistent Storage**: Generated primes reused across runs
+3. **Incremental Growth**: Only generate new primes as needed
+4. **Memory Efficiency**: Load only necessary files
+
+### Trade-offs
+
+- **Disk Space**: Requires storage for prime files
+- **Initial Cost**: First generation takes time
+- **File I/O**: Some overhead for file operations
+
+---
+
+## Performance Notes
+
+### Method Selection Impact
+
+| Scenario | Poor Choice | Good Choice | Speedup |
+|----------|-------------|-------------|---------|
+| Check if 1,000,003 is prime | `isPrime` | `isPrimeFromTextRecursiveUpdated` | 100x+ |
+| Generate primes up to 100,000 | `generatePrimesUpTo` | `generatePrimesRecursiveUpdated` | 50x+ |
+| Find divisors of 1,000,000 | `calculateDivisors` | `calculateDivisorsUsingText` | 10x+ |
+
+### Optimization Strategy
+
+1. **Pre-compute**: Use `generatePrimesFilesUpdated` to create files
+2. **Recursive Methods**: Always prefer recursive/updated versions
+3. **File-Based**: Leverage existing files when √n < file limit
+4. **Avoid Basic**: Never use Main 1-4 methods in production
+
+---
+
+## Author
+
+**Farid Masjedi**
+
+GitHub: [Farid Masjedi](https://github.com/faridmasjedi)
+
+---
+
+## Version History
+
+- **Version 2.0** (2024-12-03)
+  - Updated import structure
+  - Added recursive methods
+  - Performance optimizations
+
+- **Version 1.0** (2024-12-03)
+  - Initial orchestration layer
+  - Basic method organization
+
+---
+
+## Related Documentation
+
+- **[Main README](../../README.md)** - Project overview and mathematical foundations
+- **[User Guide](../../USER_GUIDE.md)** - How to use the library
+- **[Methods Guide](../../METHODS_GUIDE.md)** - Detailed algorithm explanations
+- **[Comparison](../../COMPARISON.md)** - Performance benchmarks
+- **[JavaScript Services](../services/README.md)** - Service layer documentation
+- **[Python Services](../services-py/README.md)** - Python implementations
+
+---
+
+## License
+
+Open source - feel free to use, modify, and distribute.
