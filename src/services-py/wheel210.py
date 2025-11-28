@@ -159,6 +159,14 @@ def sieve_wheel210(limit):
     for candidate in Wheel210.generate_candidates(13, limit):
         candidates[candidate] = True
 
+    # Mark multiples of 11 (11 is not in candidates since we start from 13)
+    if limit >= 11:
+        multiple = 11 * 11  # Start from 11²
+        while multiple <= limit:
+            if multiple in candidates:
+                candidates[multiple] = False
+            multiple += 11
+
     # Sieving phase
     sqrt_limit = int(math.sqrt(limit))
 

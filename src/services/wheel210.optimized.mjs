@@ -138,6 +138,18 @@ export function sieveWheel210(limit) {
     candidates.set(candidate, true);
   }
 
+  // Mark multiples of 11 (11 is not in candidates since we start from 13)
+  if (numLimit >= 11) {
+    let multiple = 11 * 11;  // Start from 11²
+    while (multiple <= numLimit) {
+      const multipleStr = multiple.toString();
+      if (candidates.has(multipleStr)) {
+        candidates.set(multipleStr, false);
+      }
+      multiple += 11;
+    }
+  }
+
   // Sieving phase
   const sqrtLimit = Math.floor(Math.sqrt(numLimit));
   const sortedCandidates = Array.from(candidates.keys()).sort(
