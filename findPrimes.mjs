@@ -2,6 +2,7 @@ import readline from 'readline';
 import { sieveWheel210 } from './src/services/wheel210.optimized.mjs';
 import { HybridPrimeFinder, sieve6kOptimized } from './src/services/primeHybrid.optimized.mjs';
 import { isPrimeOptimized } from './src/services/primeChecker.optimized.mjs';
+import { sieveHyperbolic } from './investigation/primeHyperbolic.optimized.mjs';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -106,6 +107,12 @@ const methods = {
     description: 'Tests each candidate individually - Slower but simple',
     category: 'Trial Division Methods',
     run: (limit) => sieveTrialDivision(limit)
+  },
+  '6': {
+    name: 'Hyperbolic Hybrid Sieve',
+    description: 'Uses hyperbolic equations + trial division fallback',
+    category: 'Optimized Sieves',
+    run: (limit) => sieveHyperbolic(limit.toString())
   }
 };
 
@@ -138,7 +145,7 @@ async function main() {
   try {
     displayMenu();
 
-    const methodChoice = await question('\nEnter method number (1-5): ');
+    const methodChoice = await question('\nEnter method number (1-6): ');
 
     if (!methods[methodChoice]) {
       console.log('Invalid method choice!');
