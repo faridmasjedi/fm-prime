@@ -206,11 +206,49 @@ The optimized implementation includes:
 
 ---
 
+## Installation
+
+### npm (JavaScript) 📦
+
+```bash
+# Install globally
+npm install -g primefm
+
+# Or install in your project
+npm install primefm
+
+# Or use directly without installing
+npx primefm
+```
+
+**Package URL:** https://www.npmjs.com/package/primefm
+
+### PyPI (Python) 🐍 - Coming Soon
+
+```bash
+pip install primefm
+```
+
+---
+
 ## Quick Start
 
 ### Interactive Prime Finder
 
-The easiest way to get started is using the interactive menu:
+**Using the installed package:**
+
+```bash
+# JavaScript - after npm install -g primefm
+primefm
+
+# Or use directly
+npx primefm
+
+# Python - after pip install primefm (coming soon)
+primefm
+```
+
+**For local development:**
 
 ```bash
 # JavaScript
@@ -224,12 +262,13 @@ Both provide an interactive menu to choose from 6 different prime-finding method
 
 ### Programmatic Usage
 
-#### JavaScript
+#### JavaScript (Using npm package)
 
 ```javascript
-import { isPrimeOptimized, millerRabinTest } from './src/services/primeChecker.optimized.mjs';
-import { sieveWheel210 } from './src/services/wheel210.optimized.mjs';
-import { sieveHyperbolicOptimized } from './src/services/primeHyperbolic.optimized.mjs';
+// After: npm install primefm
+import { isPrimeOptimized } from 'primefm/checker';
+import { sieveWheel210 } from 'primefm/wheel210';
+import { sieveHyperbolicOptimized } from 'primefm/hyperbolic';
 
 // Check single prime
 console.log(isPrimeOptimized('999983'));  // true
@@ -243,10 +282,28 @@ const cachedPrimes = sieveHyperbolicOptimized('100000');
 console.log(`Found ${cachedPrimes.length} primes`);
 ```
 
-#### Python
+<details>
+<summary>For local development (without npm package)</summary>
+
+```javascript
+import { isPrimeOptimized } from './src/services/primeChecker.optimized.mjs';
+import { sieveWheel210 } from './src/services/wheel210.optimized.mjs';
+import { sieveHyperbolicOptimized } from './src/services/primeHyperbolic.optimized.mjs';
+```
+
+</details>
+
+#### Python (PyPI package coming soon)
 
 ```python
-from prime_optimized import is_prime_optimized, miller_rabin_test
+# After: pip install primefm (once published)
+# from primefm import is_prime_optimized, sieve_wheel210, sieve_hyperbolic_optimized
+
+# For now, use local imports:
+import sys
+sys.path.insert(0, 'src/services-py')
+
+from prime_optimized import is_prime_optimized
 from wheel210 import sieve_wheel210
 from prime_hyperbolic_optimized import sieve_hyperbolic_optimized
 
