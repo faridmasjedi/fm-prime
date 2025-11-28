@@ -195,7 +195,10 @@ For 6n+1:
 The optimized implementation includes:
 - **Two-way search**: Bottom-up (finds factors near √N) + Top-down (finds small factors quickly)
 - **Modular filters**: Quadratic residue checks (mod 64, 63, 65) eliminate ~94% of non-squares before expensive square roots
-- **Intelligent caching**: File-based caching via `output-big` folder system - reuses previously computed primes
+- **Intelligent caching**: File-based caching via `output-big` folder system with smart optimizations:
+  - **Incremental generation**: When creating larger limits, copies existing files and only generates new primes
+  - **Efficient filtering**: When creating smaller limits, copies and filters from larger cached results
+  - **Split file format**: ~1MB files named by first prime for fast lookups
 - **Verified accuracy**: 100% correct results (664,579 primes under 10,000,000)
 
 **Available in both JavaScript and Python:**

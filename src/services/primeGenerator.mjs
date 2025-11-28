@@ -8,6 +8,8 @@ import {
   writeDataToFile,
   findLargestOutputFolder,
   copyFilesAndFormatLastFileUpdated,
+  primesInFile,
+  parseAndSortFiles,
 } from "./fileOperations.mjs";
 
 import {
@@ -35,7 +37,32 @@ const generatePrimesUpTo = (
 ) => {
   const startTime = Date.now();
   let checkFolderName = numFolderExist(number);
-  if (checkFolderName) return;
+  if (checkFolderName) {
+    // Folder exists, read and return the primes
+    const files = getAllFromDirectory(checkFolderName);
+    const sortedFiles = parseAndSortFiles(files.filter(f => f.startsWith('Output') || f.startsWith('output')));
+
+    const allPrimes = [];
+    for (const file of sortedFiles) {
+      const filePath = `${checkFolderName}/${file}`;
+      const primes = primesInFile(filePath);
+      for (const p of primes) {
+        let trimmed = p.trim();
+        // Handle case where first element might be "(0) | 2" - extract just the number
+        if (trimmed.includes('|')) {
+          const parts = trimmed.split('|');
+          if (parts.length > 1) {
+            trimmed = parts[1].trim();
+          }
+        }
+        // Skip empty strings and standalone index markers like "(664579)"
+        if (trimmed && trimmed !== '' && !trimmed.startsWith('(')) {
+          allPrimes.push(trimmed);
+        }
+      }
+    }
+    return allPrimes;
+  }
   const folderName = createOutputFolder(number);
   while (findMax(current, number) !== current || current === number) {
     if (isPrime(current)) {
@@ -256,38 +283,56 @@ const generatePrimesUpToRecursiveUpdated = (
   return count;
 };
 const generatePrimesRecursiveUpdated = (
-  number,
-  current = "2",
-  dataBuffer = "",
-  count = 0,
-  pageIndex = 0
+  startNum,
+  endNum,
+  current = startNum,
+  primesArray = []
 ) => {
-  const startTime = Date.now();
-  let checkFolderName = numFolderExist(number);
-  if (checkFolderName) return;
-  const folderName = createOutputFolder(number);
-  while (findMax(current, number) !== current || current === number) {
-    if (isPrimeFromTextFilesRecursiveUpdated(current)) {
-      console.log("current prime:", current);
-      if (count % 1000000 === 0 && count !== 0) {
-        if (!dataBuffer.includes(`(${count})`)) dataBuffer += `\n(${count})`;
-        writeDataToFile(folderName, pageIndex, dataBuffer);
-        dataBuffer = "";
-        pageIndex++;
+  // Return cached primes if folder exists
+  let checkFolderName = numFolderExist(endNum.toString());
+  if (checkFolderName) {
+    // Folder exists, read and return the primes in range
+    const files = getAllFromDirectory(checkFolderName);
+    const sortedFiles = parseAndSortFiles(files.filter(f => f.startsWith('Output') || f.startsWith('output')));
+
+    const allPrimes = [];
+    for (const file of sortedFiles) {
+      const filePath = `${checkFolderName}/${file}`;
+      const primes = primesInFile(filePath);
+      for (const p of primes) {
+        let trimmed = p.trim();
+        if (trimmed.includes('|')) {
+          const parts = trimmed.split('|');
+          if (parts.length > 1) {
+            trimmed = parts[1].trim();
+          }
+        }
+        if (trimmed && trimmed !== '' && !trimmed.startsWith('(')) {
+          const primeNum = parseInt(trimmed);
+          if (primeNum >= startNum && primeNum <= endNum) {
+            allPrimes.push(trimmed);
+          }
+        }
       }
-      dataBuffer +=
-        count % 20 === 0 ? `\n(${count}) | ${current},` : `${current},`;
-      count++;
     }
-    current = findNextCandidate(current);
+    return allPrimes;
   }
 
-  writeDataToFile(folderName, pageIndex, dataBuffer + `\n(${count})`);
-  const finishTime = Date.now();
-  console.log(
-    `Time to finish the job: ${(finishTime - startTime) / 1000} seconds`
-  );
-  return count;
+  // Generate primes without recursion to avoid stack overflow
+  const start = typeof startNum === 'string' ? parseInt(startNum) : startNum;
+  const end = typeof endNum === 'string' ? parseInt(endNum) : endNum;
+
+  for (let num = start; num <= end; num++) {
+    // Skip even numbers except 2
+    if (num > 2 && num % 2 === 0) continue;
+
+    // Use the optimized prime checker
+    if (isPrimeFromTextFilesRecursiveUpdated(num)) {
+      primesArray.push(num.toString());
+    }
+  }
+
+  return primesArray;
 };
 
 /**

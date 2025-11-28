@@ -607,25 +607,27 @@ const isPrimeFromTextFilesRecursive = (num) => {
   }
 };
 const isPrimeFromTextFilesRecursiveUpdated = (num) => {
-  if (notPrimeBasicChecker(num)) return false;
+  // Convert to string since notPrimeBasicChecker expects a string
+  const numStr = typeof num === 'string' ? num : num.toString();
+  if (notPrimeBasicChecker(numStr)) return false;
   const source = "./output-big";
-  const sqrtNum = sqrtFloor(num);
+  const sqrtNum = sqrtFloor(numStr);
   const folder = findMatchingFolder(source, sqrtNum);
   console.log(`Checking if ${num} is prime...`);
   if (folder && !folder.includes("larger than")) {
     console.log(`Checking divisors for ${num} in the existing ${folder}...`);
-    return !checkDivisorFromFiles(num, folder);
+    return !checkDivisorFromFiles(numStr, folder);
   }
 
   const lastFolderName = findLastExistingFolderNumber(source);
   const lastFolderPath = `${source}/${lastFolderName}`;
   console.log(`Checking divisors in the last existing folder for ${num}...`);
-  if (checkDivisorFromFiles(num, lastFolderPath)) return false;
+  if (checkDivisorFromFiles(numStr, lastFolderPath)) return false;
   const lastNumber = lastFolderName.replace("output-", "");
 
   if (
     checkDivisorNotExistOnTextFilesRecursiveUpdated(
-      num,
+      numStr,
       sqrtNum,
       findNextCandidate(lastNumber)
     )

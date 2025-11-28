@@ -99,6 +99,7 @@ def calculate_primes(number):
     primes = sorted(filter(lambda x: x <= number, primes))
     write_to_file(number, numFolder, primes, f"OutputPrimes-{len(primes)}")
     print(f"Primes up to {number} written to {numFolder}")
+    return len(primes)
 
 def copy_from_other_folder(number, root_folder, num_folder):
 
@@ -140,13 +141,30 @@ def calculate_primes_text(number):
     # Check if the folder already exists
     if num_folder.exists():
         print(f"{num_folder} already exists.")
-        return
+        # Read the count from existing OutputPrimes file
+        for filename in os.listdir(num_folder):
+            if filename.startswith("OutputPrimes-"):
+                # Extract count from filename like "OutputPrimes-25.txt"
+                count_str = filename.replace("OutputPrimes-", "").replace(".txt", "")
+                try:
+                    return int(count_str)
+                except ValueError:
+                    pass
+        return None
 
     # Attempt to copy data from another matching folder
     if copy_from_other_folder(number, root_folder, num_folder):
         print(f"Primes up to {number} copied from an existing folder.")
-        return
+        # Read the count from newly created OutputPrimes file
+        for filename in os.listdir(num_folder):
+            if filename.startswith("OutputPrimes-"):
+                count_str = filename.replace("OutputPrimes-", "").replace(".txt", "")
+                try:
+                    return int(count_str)
+                except ValueError:
+                    pass
+        return None
 
-    calculate_primes(number)
+    return calculate_primes(number)
 
 # calculate_primes_text(12000000)

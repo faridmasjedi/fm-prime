@@ -221,8 +221,8 @@ def read_primes_from_folder(folder_path):
 
     primes = []
 
-    # Find all Output*.txt files
-    files = sorted([f for f in os.listdir(folder_path) if f.startswith('Output') and f.endswith('.txt')])
+    # Find all Output*.txt files (case-insensitive)
+    files = sorted([f for f in os.listdir(folder_path) if (f.startswith('Output') or f.startswith('output')) and f.endswith('.txt')])
 
     for filename in files:
         filepath = os.path.join(folder_path, filename)
