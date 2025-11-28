@@ -25,7 +25,9 @@ import {
   findLastExistingFolderNumber,
   getAllFromDirectory,
   parseAndSortFiles,
-  primesInFile
+  primesInFile,
+  writePrimesToSplitFiles,
+  readAllPrimesFromFolder
 } from './fileOperations.mjs';
 
 import {
@@ -187,38 +189,12 @@ function isPrimeHyperbolicCore(numInput) {
 
 /**
  * Reads all primes from an output folder
+ * Uses the new split file system from fileOperations.mjs
  * @param {string} folderPath - Path to the output folder
  * @returns {bigint[]} - Array of prime numbers as BigInts
  */
 function readPrimesFromFolder(folderPath) {
-  if (!fsExistsSync(folderPath)) return [];
-
-  const files = getAllFromDirectory(folderPath);
-  // Handle both Output*.txt and output*.txt for backward compatibility
-  const sortedFiles = parseAndSortFiles(files.filter(f => f.startsWith('Output') || f.startsWith('output')));
-
-  const allPrimes = [];
-  for (const file of sortedFiles) {
-    const filePath = `${folderPath}/${file}`;
-    const primes = primesInFile(filePath);
-
-    for (const p of primes) {
-      let trimmed = p.trim();
-      // Handle case where first element might be "(0) | 2" - extract just the number
-      if (trimmed.includes('|')) {
-        const parts = trimmed.split('|');
-        if (parts.length > 1) {
-          trimmed = parts[1].trim();
-        }
-      }
-      // Skip empty strings and standalone index markers like "(664579)"
-      if (trimmed && trimmed !== '' && !trimmed.startsWith('(')) {
-        allPrimes.push(BigInt(trimmed));
-      }
-    }
-  }
-
-  return allPrimes;
+  return readAllPrimesFromFolder(folderPath);
 }
 
 /**
@@ -237,31 +213,14 @@ function findLargestExistingLimit() {
 }
 
 /**
- * Saves primes to output folder in standard format
- * Format: (index) | p1,p2,p3,... (20 primes per line)
+ * Saves primes to output folder using split file system
+ * Creates multiple ~1MB files per folder for memory efficiency
  * @param {bigint} limit - The upper limit used to generate primes
  * @param {bigint[]} primes - Array of prime numbers
  */
 function savePrimesToFolder(limit, primes) {
   const folderPath = createOutputFolder(limit.toString());
-
-  // Use first prime in filename (consistent with split file system)
-  const firstPrime = primes.length > 0 ? primes[0].toString() : '2';
-  const filename = `output${firstPrime}.txt`;
-
-  // Format primes with indices (20 per line)
-  let data = '';
-  for (let i = 0; i < primes.length; i++) {
-    if (i % 20 === 0) {
-      data += (i === 0 ? '' : '\n') + `(${i}) | `;
-    }
-    data += primes[i].toString() + ',';
-  }
-
-  // Add final count at the end
-  data += `\n(${primes.length})`;
-
-  writeDataToFile(folderPath, filename, data);
+  writePrimesToSplitFiles(folderPath, primes);
 }
 
 /**

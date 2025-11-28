@@ -33,6 +33,7 @@ import math
 import os
 import json
 from pathlib import Path
+from textUtils import write_primes_to_split_files
 
 
 # ============================================================================
@@ -221,8 +222,14 @@ def read_primes_from_folder(folder_path):
 
     primes = []
 
-    # Find all Output*.txt files
-    files = sorted([f for f in os.listdir(folder_path) if f.startswith('Output') and f.endswith('.txt')])
+    # Find all Output*.txt and output*.txt files
+    # Sort numerically by extracting the number from filename
+    files = [f for f in os.listdir(folder_path) if (f.startswith('Output') or f.startswith('output')) and f.endswith('.txt')]
+    def extract_number(filename):
+        import re
+        match = re.search(r'(\d+)', filename)
+        return int(match.group(1)) if match else 0
+    files = sorted(files, key=extract_number)
 
     for filename in files:
         filepath = os.path.join(folder_path, filename)
@@ -264,8 +271,8 @@ def find_largest_existing_limit():
 
 def save_primes_to_folder(limit, primes):
     """
-    Save primes to output folder in standard format.
-    Format: (index) | p1,p2,p3,... (20 primes per line)
+    Save primes to output folder using split file system.
+    Creates multiple ~1MB files per folder for memory efficiency.
 
     Args:
         limit: The upper limit used to generate primes
@@ -273,20 +280,7 @@ def save_primes_to_folder(limit, primes):
     """
     folder_path = os.path.join(OUTPUT_ROOT, f'output-{limit}')
     os.makedirs(folder_path, exist_ok=True)
-
-    filename = os.path.join(folder_path, 'Output0.txt')
-
-    # Format primes with indices (20 per line)
-    with open(filename, 'w') as f:
-        for i, prime in enumerate(primes):
-            if i % 20 == 0:
-                if i > 0:
-                    f.write('\n')
-                f.write(f'({i}) | ')
-            f.write(f'{prime},')
-
-        # Add final count at the end
-        f.write(f'\n({len(primes)})')
+    write_primes_to_split_files(folder_path, primes)
 
 
 def generate_primes_in_range(start, limit):

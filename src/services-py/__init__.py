@@ -25,7 +25,7 @@ Basic Usage:
 For more information, see: https://github.com/faridmasjedi/fm-prime
 """
 
-__version__ = "1.0.4"
+__version__ = "1.0.7"
 __author__ = "Farid Masjedi <farid.masjedi1985@gmail.com>"
 __license__ = "MIT"
 

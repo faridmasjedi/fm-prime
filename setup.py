@@ -11,7 +11,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="fm-prime",
-    version="1.0.6",
+    version="1.0.7",
     author="Farid Masjedi",
     author_email="farid.masjedi1985@gmail.com",
     description="Comprehensive prime number utilities with multiple algorithms including the novel Hyperbolic Equation Method with intelligent caching",

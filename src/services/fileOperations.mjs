@@ -388,7 +388,7 @@ const writePrimesToSplitFiles = (folderPath, primes, maxFileSizeKB = 1024) => {
         }
         data += currentFile[j].toString() + ',';
       }
-      data += `\n(${currentFile.length})`;
+      data += `\n(${globalIndex + currentFile.length})`;
 
       writeDataToFile(folderPath, filename, data);
 
@@ -416,7 +416,7 @@ const writePrimesToSplitFiles = (folderPath, primes, maxFileSizeKB = 1024) => {
       }
       data += currentFile[j].toString() + ',';
     }
-    data += `\n(${currentFile.length})`;
+    data += `\n(${globalIndex + currentFile.length})`;
 
     writeDataToFile(folderPath, filename, data);
   }

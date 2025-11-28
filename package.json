@@ -1,6 +1,6 @@
 {
   "name": "primefm",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Comprehensive prime number utilities with multiple algorithms including the novel Hyperbolic Equation Method with intelligent caching",
   "type": "module",
   "main": "./src/orchestration/prime.mjs",

@@ -299,11 +299,11 @@ def write_primes_to_split_files(folder_path, primes, max_file_size_kb=1024):
                     prefix = "" if j == 0 else "\n"
                     data += f"{prefix}({global_index + j}) | "
                 data += str(p) + ","
-            
-            data += f"\n({len(current_file)})"
-            
+
+            data += f"\n({global_index + len(current_file)})"
+
             write_data_to_file(folder_path, filename, data)
-            
+
             global_index += len(current_file)
             current_file = []
             current_size = 0
@@ -321,8 +321,8 @@ def write_primes_to_split_files(folder_path, primes, max_file_size_kb=1024):
                 prefix = "" if j == 0 else "\n"
                 data += f"{prefix}({global_index + j}) | "
             data += str(p) + ","
-        
-        data += f"\n({len(current_file)})"
-        
+
+        data += f"\n({global_index + len(current_file)})"
+
         write_data_to_file(folder_path, filename, data)
 

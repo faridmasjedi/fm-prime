@@ -64,16 +64,18 @@ def write_text_file(folder_path, file_name, data):
 def write_data_to_file(folder_name, filename, data):
     """
     Writes data to a file, appending to it if it already exists.
+    Handles both legacy OutputX.txt and new outputX.txt formats.
 
     :param folder_name: Path to the folder where the file will be created or updated.
     :param filename: Name of the file to write to.
     :param data: Data to write into the file.
     """
-    file_path = (
-        folder_name
-        if "Output" in folder_name
-        else os.path.join(folder_name, f"Output{filename}.txt")
-    )
+    # If filename already has an extension or starts with output/Output, use it as is
+    if filename.endswith('.txt') or filename.lower().startswith('output'):
+        file_path = os.path.join(folder_name, filename)
+    else:
+        file_path = os.path.join(folder_name, f"Output{filename}.txt")
+
     with open(file_path, "a") as file:
         file.write(data)
 
@@ -188,3 +190,62 @@ def search_files_up_to_number(folder_path, number):
             result.append(file)
 
     return result
+
+
+def write_primes_to_split_files(folder_path, primes, max_file_size_kb=1024):
+    """
+    Write primes to folder, splitting into ~1MB files.
+    Files are named by their first prime number.
+
+    :param folder_path: Output folder path
+    :param primes: List of primes (int or str)
+    :param max_file_size_kb: Max file size in KB
+    """
+    if not primes:
+        return
+
+    current_file = []
+    current_size = 0
+    max_size_bytes = max_file_size_kb * 1024
+    global_index = 0
+
+    for prime in primes:
+        prime_str = str(prime) + ','
+        prime_size = len(prime_str.encode('utf-8'))
+
+        if current_size + prime_size > max_size_bytes and current_file:
+            first_prime = current_file[0]
+            filename = f"output{first_prime}.txt"
+
+            data = ""
+            for j, p in enumerate(current_file):
+                if j % 20 == 0:
+                    prefix = "" if j == 0 else "\n"
+                    data += f"{prefix}({global_index + j}) | "
+                data += str(p) + ","
+
+            data += f"\n({global_index + len(current_file)})"
+
+            write_data_to_file(folder_path, filename, data)
+
+            global_index += len(current_file)
+            current_file = []
+            current_size = 0
+
+        current_file.append(prime)
+        current_size += prime_size
+
+    if current_file:
+        first_prime = current_file[0]
+        filename = f"output{first_prime}.txt"
+
+        data = ""
+        for j, p in enumerate(current_file):
+            if j % 20 == 0:
+                prefix = "" if j == 0 else "\n"
+                data += f"{prefix}({global_index + j}) | "
+            data += str(p) + ","
+
+        data += f"\n({global_index + len(current_file)})"
+
+        write_data_to_file(folder_path, filename, data)
