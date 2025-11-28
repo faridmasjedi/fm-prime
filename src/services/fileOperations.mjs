@@ -29,9 +29,9 @@ const numFolderExist = (number) => {
   const dir = `${rootFolder}/output-${number}`;
   return fsExistsSync(dir)
     ? (() => {
-        console.log(`${dir} already exists...`);
-        return dir;
-      })()
+      console.log(`${dir} already exists...`);
+      return dir;
+    })()
     : false;
 };
 
@@ -56,7 +56,8 @@ const createOutputFolder = (number) => {
  * @param {string} data - Data to be written.
  */
 const writeDataToFile = (folderName, filename, data) => {
-  const filePath = ("" + filename).includes("Output")
+  // If filename already has an extension or starts with output/Output, use it as is
+  const filePath = (filename.match(/\.txt$/) || filename.match(/^[Oo]utput/))
     ? `${folderName}/${filename}`
     : `${folderName}/Output${filename}.txt`;
   fsWriteFileSync(filePath, data, { flag: "a" });
@@ -67,12 +68,22 @@ const writeDataToFile = (folderName, filename, data) => {
  * @param {string[]} files - List of file names.
  * @returns {string[]} - Sorted list of file names.
  */
+/**
+ * Parses and sorts files based on the numerical suffix in their names.
+ * Handles both "OutputX.txt" and "outputX.txt" formats.
+ * @param {string[]} files - List of file names.
+ * @returns {string[]} - Sorted list of file names.
+ */
 const parseAndSortFiles = (files) =>
   files
-    .map((file) => ({
-      name: file,
-      number: parseInt(file.split("Output")[1], 10) || 0,
-    }))
+    .map((file) => {
+      // Handle both Output and output prefixes
+      const match = file.match(/^[Oo]utput(\d+)\.txt$/);
+      return {
+        name: file,
+        number: match ? parseInt(match[1], 10) : (parseInt(file.split("Output")[1], 10) || 0),
+      };
+    })
     .sort((a, b) => a.number - b.number)
     .map((file) => file.name);
 
@@ -134,8 +145,8 @@ const findMatchingFolderString = (source, number) => {
  */
 const primesInFile = (filePath) => {
   const data = fsReadFileSync(filePath, "utf-8")
-    .replace(/\n.*\| /g, "")
-    .replace(/\n(.*)/g, "")
+    .replace(/(\(\d+\) \| )/g, "") // Remove (index) | prefix from all lines
+    .replace(/\n/g, "") // Remove newlines
     .split(",");
   data.pop();
   return data;
@@ -175,7 +186,7 @@ const findMatchingFileString = (folder, number) => {
     .filter((file) => file.startsWith("Output"))
     .sort((a, b) =>
       findMax(a.split("Output")[1], b.split("Output")[1]) ===
-      a.split("Output")[1]
+        a.split("Output")[1]
         ? 1
         : -1
     );
@@ -339,6 +350,172 @@ const copyFilesAndFormatLastFileUpdated = (num) => {
   copyAllFiles(files, lastFolderPath, targetFolderPath);
 };
 
+// ============================================================================
+// SPLIT FILE STRUCTURE - Memory-Safe File Handling
+// ============================================================================
+
+/**
+ * Write primes to folder, splitting into ~1MB files
+ * Files are named by their first prime number for fast lookup
+ * 
+ * @param {string} folderPath - Output folder path
+ * @param {bigint[]} primes - Array of prime BigInts
+ * @param {number} maxFileSizeKB - Max file size in KB (default 1024 = 1MB)
+ */
+const writePrimesToSplitFiles = (folderPath, primes, maxFileSizeKB = 1024) => {
+  if (!primes || primes.length === 0) return;
+
+  let currentFile = [];
+  let currentSize = 0;
+  const maxSizeBytes = maxFileSizeKB * 1024;
+  let globalIndex = 0; // Maintain cumulative index across files
+
+  for (let i = 0; i < primes.length; i++) {
+    const prime = primes[i];
+    const primeStr = prime.toString() + ',';
+    const primeSize = Buffer.byteLength(primeStr, 'utf8');
+
+    // If adding this prime would exceed limit, write current file
+    if (currentSize + primeSize > maxSizeBytes && currentFile.length > 0) {
+      const firstPrime = currentFile[0];
+      const filename = `output${firstPrime}.txt`;
+
+      // Format: (index) | prime1,prime2,...
+      let data = '';
+      for (let j = 0; j < currentFile.length; j++) {
+        if (j % 20 === 0) {
+          data += (j === 0 ? '' : '\n') + `(${globalIndex + j}) | `;
+        }
+        data += currentFile[j].toString() + ',';
+      }
+      data += `\n(${currentFile.length})`;
+
+      writeDataToFile(folderPath, filename, data);
+
+      // Update global index
+      globalIndex += currentFile.length;
+
+      // Start new file
+      currentFile = [];
+      currentSize = 0;
+    }
+
+    currentFile.push(prime);
+    currentSize += primeSize;
+  }
+
+  // Write remaining primes
+  if (currentFile.length > 0) {
+    const firstPrime = currentFile[0];
+    const filename = `output${firstPrime}.txt`;
+
+    let data = '';
+    for (let j = 0; j < currentFile.length; j++) {
+      if (j % 20 === 0) {
+        data += (j === 0 ? '' : '\n') + `(${globalIndex + j}) | `;
+      }
+      data += currentFile[j].toString() + ',';
+    }
+    data += `\n(${currentFile.length})`;
+
+    writeDataToFile(folderPath, filename, data);
+  }
+};
+
+/**
+ * Find which file in a folder contains a specific number
+ * Uses the filename (outputXXX.txt) to quickly locate the correct file
+ * 
+ * @param {string} folderPath - Folder to search
+ * @param {bigint} targetNumber - Number to find
+ * @returns {string|null} - Filename containing the number, or null
+ */
+const findFileForNumber = (folderPath, targetNumber) => {
+  if (!fsExistsSync(folderPath)) return null;
+
+  const files = getAllFromDirectory(folderPath)
+    .filter(f => f.match(/^output\d+\.txt$/))
+    .map(f => ({
+      name: f,
+      startNum: BigInt(f.replace('output', '').replace('.txt', ''))
+    }))
+    .sort((a, b) => a.startNum > b.startNum ? 1 : -1);
+
+  if (files.length === 0) {
+    // Try old format (Output0.txt)
+    const oldFile = 'Output0.txt';
+    if (fsExistsSync(`${folderPath}/${oldFile}`)) {
+      return oldFile;
+    }
+    return null;
+  }
+
+  // Find correct file using binary search logic
+  for (let i = 0; i < files.length; i++) {
+    const currentStart = files[i].startNum;
+    const nextStart = i < files.length - 1 ? files[i + 1].startNum : null;
+
+    if (nextStart === null) {
+      // Last file - number must be in here if it exists
+      if (targetNumber >= currentStart) {
+        return files[i].name;
+      }
+    } else if (targetNumber >= currentStart && targetNumber < nextStart) {
+      return files[i].name;
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Read all primes from a folder (handles both old and new file formats)
+ * 
+ * @param {string} folderPath - Path to folder
+ * @returns {bigint[]} - Array of all primes
+ */
+const readAllPrimesFromFolder = (folderPath) => {
+  if (!fsExistsSync(folderPath)) return [];
+
+  const files = getAllFromDirectory(folderPath);
+  const hasSplitFormat = files.some(f => f.match(/^output\d+\.txt$/));
+  const hasOldFormat = files.includes('Output0.txt');
+
+  const allPrimes = [];
+
+  if (hasSplitFormat) {
+    // New split format - read all files
+    const splitFiles = files
+      .filter(f => f.match(/^output\d+\.txt$/))
+      .map(f => ({
+        name: f,
+        startNum: BigInt(f.replace('output', '').replace('.txt', ''))
+      }))
+      .sort((a, b) => a.startNum > b.startNum ? 1 : -1);
+
+    for (const fileInfo of splitFiles) {
+      const primes = primesInFile(`${folderPath}/${fileInfo.name}`);
+      for (const p of primes) {
+        const trimmed = p.trim();
+        if (trimmed && !trimmed.startsWith('(')) {
+          allPrimes.push(BigInt(trimmed));
+        }
+      }
+    }
+  } else if (hasOldFormat) {
+    // Old single file format
+    const primes = primesInFile(`${folderPath}/Output0.txt`);
+    for (const p of primes) {
+      const trimmed = p.trim();
+      if (trimmed && !trimmed.startsWith('(')) {
+        allPrimes.push(BigInt(trimmed));
+      }
+    }
+  }
+
+  return allPrimes;
+};
+
 export {
   getAllFromDirectory,
   numFolderExist,
@@ -355,4 +532,8 @@ export {
   findLastExistingFolderNumber,
   copyAllFiles,
   primesInFile,
+  // New split file functions
+  writePrimesToSplitFiles,
+  findFileForNumber,
+  readAllPrimesFromFolder,
 };

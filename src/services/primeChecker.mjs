@@ -6,6 +6,7 @@ import {
   getAllFromDirectory,
   parseAndSortFiles,
   primesInFile,
+  findFileForNumber,
 } from "./fileOperations.mjs";
 import {
   findNextCandidate,
@@ -27,7 +28,13 @@ import {
   sqrtFloor,
 } from "./mathOperations.mjs";
 
-import { readFileSync as fsReadFileSync } from "fs";
+import {
+  readFileSync as fsReadFileSync,
+  statSync as fsStatSync,
+  openSync as fsOpenSync,
+  readSync as fsReadSync,
+  closeSync as fsCloseSync
+} from "fs";
 
 /**
  * Checks if a candidate is a divisor of a number.
@@ -59,16 +66,75 @@ const findPrimeFactor = (num, factor) => {
  * @param {string} file - The file to search within.
  * @returns {boolean} - True if the number exists in the file; false otherwise.
  */
-const checkNumberInFile = (num, folder, file) => {
-  const filePath = file.includes(folder) ? file : `${folder}/${file}`;
-  const fileData = fsReadFileSync(filePath, "utf-8");
+/**
+ * Checks if a number exists in a specified file and logs its status.
+ * MEMORY-SAFE: Uses efficient file lookup and small file reading.
+ * @param {string} num - The number to check.
+ * @param {string} folder - The folder path.
+ * @param {string} [file] - Optional file to search within. If not provided, finds correct file.
+ * @returns {boolean} - True if the number exists in the file; false otherwise.
+ */
+const checkNumberInFile = (num, folder, file = null) => {
+  let targetFile = file;
+
+  // If file not provided, find the correct file for this number
+  if (!targetFile) {
+    targetFile = findFileForNumber(folder, BigInt(num));
+    if (!targetFile) return false;
+  }
+
+  const filePath = targetFile.includes(folder) ? targetFile : `${folder}/${targetFile}`;
+
+  // With split files, files are small (<1MB), so we can read safely
+  // But we keep the size check just in case we encounter a legacy large file
+  const stats = fsStatSync(filePath);
+  const fileSizeMB = stats.size / (1024 * 1024);
+
+  // For small files (< 1MB), use the fast in-memory approach
+  if (fileSizeMB < 1) {
+    const fileData = fsReadFileSync(filePath, "utf-8");
+    const pattern1 = `| ${num},`;
+    const pattern2 = `,${num},`;
+    if (fileData.includes(pattern1) || fileData.includes(pattern2)) {
+      console.log(`${num} is prime ---> ref: ${filePath}`);
+      return true;
+    }
+    return false;
+  }
+
+  // For large files (legacy), use streaming
+  const CHUNK_SIZE = 1024 * 1024; // 1MB chunks
   const pattern1 = `| ${num},`;
   const pattern2 = `,${num},`;
-  if (fileData.includes(pattern1) || fileData.includes(pattern2)) {
-    console.log(`${num} is prime ---> ref: ${filePath}`);
-    return true;
+
+  const fd = fsOpenSync(filePath, "r");
+  const buffer = Buffer.alloc(CHUNK_SIZE);
+  let position = 0;
+  let previousChunk = "";
+
+  try {
+    while (position < stats.size) {
+      const bytesRead = fsReadSync(fd, buffer, 0, CHUNK_SIZE, position);
+      if (bytesRead === 0) break;
+
+      const chunk = previousChunk + buffer.toString("utf-8", 0, bytesRead);
+
+      if (chunk.includes(pattern1) || chunk.includes(pattern2)) {
+        console.log(`${num} is prime ---> ref: ${filePath}`);
+        fsCloseSync(fd);
+        return true;
+      }
+
+      previousChunk = chunk.slice(-100);
+      position += bytesRead;
+    }
+
+    fsCloseSync(fd);
+    return false;
+  } catch (error) {
+    fsCloseSync(fd);
+    throw error;
   }
-  return false;
 };
 
 /**
@@ -194,18 +260,14 @@ const checkDivisorNotExistOnTextFiles = (number, sqrtNumber, current = "2") => {
 /**
  * Checks if a number is a prime using a folder containing prime data.
  * @param {string} num - The number to check.
- * @param {string} folder - The folder containing prime data.
+ * @param {string} specificFolder - Optional specific folder to check.
  * @returns {boolean} - True if the number is prime; false otherwise.
  */
-const checkPrimeInFiles = (num) => {
-  const folder = findMatchingFolder("./output-big", num);
-  if (folder.includes("is larger than")) return false;
+const checkPrimeInFiles = (num, specificFolder = null) => {
+  const folder = specificFolder || findMatchingFolder("./output-big", num);
+  if (typeof folder === 'string' && folder.includes("is larger than")) return false;
 
-  const files = parseAndSortFiles(getAllFromDirectory(folder));
-  for (const file of files) {
-    if (checkNumberInFile(num, folder, file)) return true;
-  }
-  return false;
+  return checkNumberInFile(num, folder);
 };
 
 /**
@@ -225,9 +287,8 @@ const isPrimeUsingFiles = (
     return isPrime(number, partition);
   }
 
-  const file = findMatchingFile(folder, number);
-  return file
-    ? checkNumberInFile(number, folder, file)
+  return checkNumberInFile(number, folder)
+    ? true
     : isPrime(number, partition);
 };
 
@@ -239,7 +300,7 @@ const isPrimeUsingFiles = (
  * @returns {Array<string>} - The list of divisors.
  */
 const checkDivisorsFromFiles = (num, folder, divisors = []) => {
-  if (checkPrimeInFiles(num)) {
+  if (checkPrimeInFiles(num, folder)) {
     divisors.push(num);
     return divisors;
   }
@@ -271,7 +332,9 @@ const checkDivisorsFromFiles = (num, folder, divisors = []) => {
  * @returns {boolean} - True if a divisor is found; false otherwise.
  */
 const checkDivisorFromFiles = (num, folder) => {
-  if (checkPrimeInFiles(num)) return false;
+  // Check if number is already cached as prime
+  // Now safe because checkPrimeInFiles uses findFileForNumber (no huge file reads)
+  if (checkPrimeInFiles(num, folder)) return false;
 
   const files = parseAndSortFiles(getAllFromDirectory(folder));
   for (const file of files) {

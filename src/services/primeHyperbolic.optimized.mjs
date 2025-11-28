@@ -30,7 +30,11 @@ import {
 
 import {
   existsSync as fsExistsSync,
-  readdirSync as fsReadDirSync
+  readdirSync as fsReadDirSync,
+  statSync as fsStatSync,
+  rmSync as fsRmSync,
+  readFileSync as fsReadFileSync,
+  writeFileSync as fsWriteFileSync
 } from 'fs';
 
 const OUTPUT_ROOT = './output-big';
@@ -412,5 +416,406 @@ export function getHyperbolicCacheStats() {
     folders: folders.length,
     largestLimit: folders.length > 0 ? folders[0] : null,
     availableLimits: folders
+  };
+}
+
+// ============================================================================
+// PARALLELIZATION - For Large-Scale Prime Generation
+// ============================================================================
+
+/**
+ * **Parallel Hyperbolic Sieve**
+ *
+ * Uses Worker threads to parallelize prime generation for large limits.
+ * Divides work among multiple CPU cores for better performance.
+ *
+ * @param {string|number|bigint} limitInput - Upper limit for prime generation
+ * @param {number} numWorkers - Number of parallel workers (default: CPU count)
+ * @returns {bigint[]} Array of prime numbers up to limit
+ */
+export async function sieveHyperbolicParallel(limitInput, numWorkers = null) {
+  const { Worker } = await import('worker_threads');
+  const { cpus } = await import('os');
+
+  const limit = BigInt(limitInput);
+
+  if (numWorkers === null) {
+    numWorkers = cpus().length;
+  }
+
+  // For small limits, sequential is faster due to overhead
+  if (limit < 10000n) {
+    return sieveHyperbolicOptimized(limitInput);
+  }
+
+  // Check cache first
+  const largestLimit = findLargestExistingLimit();
+  if (largestLimit !== null && largestLimit >= limit) {
+    const cachedFolder = `${OUTPUT_ROOT}/output-${largestLimit}`;
+    const primes = readPrimesFromFolder(cachedFolder);
+    return primes.filter(p => p <= limit);
+  }
+
+  // Divide range into chunks for parallel processing
+  const chunkSize = limit / BigInt(numWorkers);
+  const startVal = largestLimit !== null ? largestLimit + 1n : 2n;
+
+  const ranges = [];
+  for (let i = 0; i < numWorkers; i++) {
+    const chunkStart = startVal + (BigInt(i) * chunkSize);
+    const chunkEnd = i < numWorkers - 1
+      ? startVal + (BigInt(i + 1) * chunkSize)
+      : limit;
+    ranges.push({ start: chunkStart, end: chunkEnd });
+  }
+
+  // Process chunks in parallel using Worker threads
+  const workerPromises = ranges.map(range => {
+    return new Promise((resolve, reject) => {
+      const worker = new Worker(`
+        const { parentPort } = require('worker_threads');
+        const { isPrimeHyperbolicCore } = require('${import.meta.url}');
+
+        parentPort.on('message', ({ start, end }) => {
+          const primes = [];
+          for (let num = BigInt(start); num <= BigInt(end); num++) {
+            if (isPrimeHyperbolicCore(num)) {
+              primes.push(num.toString());
+            }
+          }
+          parentPort.postMessage(primes);
+        });
+      `, { eval: true });
+
+      worker.postMessage(range);
+      worker.on('message', resolve);
+      worker.on('error', reject);
+    });
+  });
+
+  // Collect results
+  const chunkResults = await Promise.all(workerPromises);
+
+  // Combine results
+  let allPrimes = [];
+
+  // Add cached primes if any
+  if (largestLimit !== null) {
+    const cachedFolder = `${OUTPUT_ROOT}/output-${largestLimit}`;
+    const cachedPrimes = readPrimesFromFolder(cachedFolder);
+    allPrimes = allPrimes.concat(cachedPrimes);
+  } else {
+    // Add small primes that might be missed
+    allPrimes = [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n];
+  }
+
+  // Add new primes from parallel processing
+  for (const chunk of chunkResults) {
+    allPrimes = allPrimes.concat(chunk.map(p => BigInt(p)));
+  }
+
+  // Remove duplicates and sort
+  allPrimes = [...new Set(allPrimes)].sort((a, b) => (a > b ? 1 : -1));
+  allPrimes = allPrimes.filter(p => p <= limit);
+
+  // Save to cache
+  savePrimesToFolder(limit, allPrimes);
+
+  return allPrimes;
+}
+
+/**
+ * **Simpler Parallel Sieve (using Promise.all)**
+ *
+ * Alternative parallel implementation without Worker threads.
+ * Processes chunks concurrently using Promise.all.
+ *
+ * @param {string|number|bigint} limitInput - Upper limit
+ * @param {number} numChunks - Number of chunks (default: 4)
+ * @returns {Promise<bigint[]>} Array of primes
+ */
+export async function sieveHyperbolicParallelSimple(limitInput, numChunks = 4) {
+  const limit = BigInt(limitInput);
+
+  if (limit < 10000n) {
+    return sieveHyperbolicOptimized(limitInput);
+  }
+
+  // Check cache first
+  const largestLimit = findLargestExistingLimit();
+  if (largestLimit !== null && largestLimit >= limit) {
+    const cachedFolder = `${OUTPUT_ROOT}/output-${largestLimit}`;
+    const primes = readPrimesFromFolder(cachedFolder);
+    return primes.filter(p => p <= limit);
+  }
+
+  // Divide range into chunks
+  const chunkSize = limit / BigInt(numChunks);
+  const startVal = largestLimit !== null ? largestLimit + 1n : 2n;
+
+  const processChunk = async (start, end) => {
+    const primes = [];
+    for (let num = start; num <= end; num++) {
+      if (isPrimeHyperbolicCore(num)) {
+        primes.push(num);
+      }
+    }
+    return primes;
+  };
+
+  // Create promises for each chunk
+  const promises = [];
+  for (let i = 0; i < numChunks; i++) {
+    const chunkStart = startVal + (BigInt(i) * chunkSize);
+    const chunkEnd = i < numChunks - 1
+      ? startVal + (BigInt(i + 1) * chunkSize)
+      : limit;
+    promises.push(processChunk(chunkStart, chunkEnd));
+  }
+
+  // Process all chunks concurrently
+  const chunkResults = await Promise.all(promises);
+
+  // Combine results
+  let allPrimes = [];
+
+  if (largestLimit !== null) {
+    const cachedFolder = `${OUTPUT_ROOT}/output-${largestLimit}`;
+    const cachedPrimes = readPrimesFromFolder(cachedFolder);
+    allPrimes = allPrimes.concat(cachedPrimes);
+  } else {
+    allPrimes = [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n];
+  }
+
+  for (const chunk of chunkResults) {
+    allPrimes = allPrimes.concat(chunk);
+  }
+
+  allPrimes = [...new Set(allPrimes)].sort((a, b) => (a > b ? 1 : -1));
+  allPrimes = allPrimes.filter(p => p <= limit);
+
+  savePrimesToFolder(limit, allPrimes);
+
+  return allPrimes;
+}
+
+// ============================================================================
+// SMART CACHE MANAGEMENT
+// ============================================================================
+
+/**
+ * **Get Cache Size**
+ *
+ * Calculate total size of cache in megabytes.
+ *
+ * @returns {number} Total cache size in MB
+ */
+export function getCacheSizeMB() {
+  if (!fsExistsSync(OUTPUT_ROOT)) {
+    return 0;
+  }
+
+  function getDirectorySize(dirPath) {
+    let size = 0;
+    const items = fsReadDirSync(dirPath);
+
+    for (const item of items) {
+      const itemPath = `${dirPath}/${item}`;
+      const stats = fsStatSync(itemPath);
+
+      if (stats.isDirectory()) {
+        size += getDirectorySize(itemPath);
+      } else {
+        size += stats.size;
+      }
+    }
+
+    return size;
+  }
+
+  const totalSize = getDirectorySize(OUTPUT_ROOT);
+
+  return totalSize / (1024 * 1024); // Convert to MB
+}
+
+/**
+ * **Manage Cache Size**
+ *
+ * Remove old cache files if cache exceeds size limit.
+ * Implements LRU (Least Recently Used) eviction strategy.
+ *
+ * @param {number} maxSizeMB - Maximum cache size in megabytes (default: 100)
+ * @param {boolean} keepLargest - Keep largest limit folder (default: true)
+ * @returns {Object} Cleanup statistics
+ */
+export function manageCacheSize(maxSizeMB = 100, keepLargest = true) {
+  const currentSize = getCacheSizeMB();
+
+  if (currentSize <= maxSizeMB) {
+    return {
+      action: 'none',
+      currentSizeMB: currentSize,
+      maxSizeMB: maxSizeMB,
+      removedFolders: []
+    };
+  }
+
+  if (!fsExistsSync(OUTPUT_ROOT)) {
+    return {
+      action: 'none',
+      currentSizeMB: 0,
+      maxSizeMB: maxSizeMB,
+      removedFolders: []
+    };
+  }
+
+  // Get all cache folders with their sizes
+  const cacheFolders = [];
+  const folders = fsReadDirSync(OUTPUT_ROOT);
+
+  for (const folderName of folders) {
+    if (!folderName.startsWith('output-')) continue;
+
+    const folderPath = `${OUTPUT_ROOT}/${folderName}`;
+    const stats = fsStatSync(folderPath);
+
+    if (!stats.isDirectory()) continue;
+
+    const limit = BigInt(folderName.replace('output-', ''));
+
+    // Calculate folder size
+    let folderSize = 0;
+    const files = fsReadDirSync(folderPath);
+    for (const file of files) {
+      const filePath = `${folderPath}/${file}`;
+      const fileStats = fsStatSync(filePath);
+      folderSize += fileStats.size;
+    }
+
+    cacheFolders.push({
+      name: folderName,
+      path: folderPath,
+      limit: limit,
+      sizeMB: folderSize / (1024 * 1024),
+      accessTime: stats.atimeMs
+    });
+  }
+
+  // Sort folders
+  if (keepLargest) {
+    cacheFolders.sort((a, b) => (a.limit > b.limit ? 1 : -1)); // Remove smallest first
+  } else {
+    cacheFolders.sort((a, b) => a.accessTime - b.accessTime); // Remove LRU first
+  }
+
+  // Remove folders until under limit
+  const removed = [];
+  let newSize = currentSize;
+
+  for (const folder of cacheFolders) {
+    if (newSize <= maxSizeMB) break;
+
+    // Remove the folder
+    fsRmSync(folder.path, { recursive: true, force: true });
+    newSize -= folder.sizeMB;
+
+    removed.push({
+      name: folder.name,
+      limit: folder.limit.toString(),
+      sizeMB: folder.sizeMB
+    });
+  }
+
+  return {
+    action: 'cleaned',
+    currentSizeMB: newSize,
+    maxSizeMB: maxSizeMB,
+    removedFolders: removed,
+    foldersRemoved: removed.length
+  };
+}
+
+/**
+ * **Compress Cache Files**
+ *
+ * Compress cache files using gzip to save disk space.
+ *
+ * @returns {Promise<Object>} Compression statistics
+ */
+export async function compressCacheFiles() {
+  const { gzip } = await import('zlib');
+  const { promisify } = await import('util');
+  const gzipAsync = promisify(gzip);
+
+  if (!fsExistsSync(OUTPUT_ROOT)) {
+    return {
+      action: 'none',
+      filesCompressed: 0,
+      spaceSavedMB: 0
+    };
+  }
+
+  let compressedCount = 0;
+  let totalSaved = 0;
+
+  async function compressDirectory(dirPath) {
+    const items = fsReadDirSync(dirPath);
+
+    for (const item of items) {
+      const itemPath = `${dirPath}/${item}`;
+      const stats = fsStatSync(itemPath);
+
+      if (stats.isDirectory()) {
+        await compressDirectory(itemPath);
+      } else if (item.endsWith('.txt') && !item.endsWith('.txt.gz')) {
+        const originalSize = stats.size;
+        const content = fsReadFileSync(itemPath);
+        const compressed = await gzipAsync(content);
+
+        fsWriteFileSync(`${itemPath}.gz`, compressed);
+        fsUnlinkSync(itemPath);
+
+        const compressedSize = compressed.length;
+        compressedCount++;
+        totalSaved += (originalSize - compressedSize);
+      }
+    }
+  }
+
+  await compressDirectory(OUTPUT_ROOT);
+
+  return {
+    action: 'compressed',
+    filesCompressed: compressedCount,
+    spaceSavedMB: totalSaved / (1024 * 1024)
+  };
+}
+
+/**
+ * **Clear All Cache**
+ *
+ * Remove all cached prime data.
+ *
+ * @returns {Object} Statistics about cleared data
+ */
+export function clearAllCache() {
+  if (!fsExistsSync(OUTPUT_ROOT)) {
+    return {
+      action: 'none',
+      foldersRemoved: 0
+    };
+  }
+
+  const folders = fsReadDirSync(OUTPUT_ROOT)
+    .filter(f => f.startsWith('output-') &&
+                 fsStatSync(`${OUTPUT_ROOT}/${f}`).isDirectory());
+
+  for (const folder of folders) {
+    fsRmSync(`${OUTPUT_ROOT}/${folder}`, { recursive: true, force: true });
+  }
+
+  return {
+    action: 'cleared',
+    foldersRemoved: folders.length
   };
 }

@@ -45,9 +45,14 @@ from .wheel210 import (
 
 from .prime_hyperbolic_optimized import (
     sieve_hyperbolic_optimized,
+    sieve_hyperbolic_parallel,
     is_prime_hyperbolic_optimized,
     division_hyperbolic,
-    get_hyperbolic_cache_stats
+    get_hyperbolic_cache_stats,
+    get_cache_size_mb,
+    manage_cache_size,
+    compress_cache_files,
+    clear_all_cache
 )
 
 from .primeUtils_optimized import (
@@ -70,8 +75,13 @@ __all__ = [
 
     # Hyperbolic methods
     'is_prime_hyperbolic_optimized',
+    'sieve_hyperbolic_parallel',
     'division_hyperbolic',
     'get_hyperbolic_cache_stats',
+    'get_cache_size_mb',
+    'manage_cache_size',
+    'compress_cache_files',
+    'clear_all_cache',
 
     # Individual prime checking
     'is_prime_wheel210',
