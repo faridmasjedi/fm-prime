@@ -196,7 +196,8 @@ function readPrimesFromFolder(folderPath) {
   if (!fsExistsSync(folderPath)) return [];
 
   const files = getAllFromDirectory(folderPath);
-  const sortedFiles = parseAndSortFiles(files.filter(f => f.startsWith('Output')));
+  // Handle both Output*.txt (old format) and output*.txt (split file format)
+  const sortedFiles = parseAndSortFiles(files.filter(f => f.startsWith('Output') || f.startsWith('output')));
 
   const allPrimes = [];
   for (const file of sortedFiles) {
@@ -240,6 +241,7 @@ function findLargestExistingLimit() {
 /**
  * Saves primes to output folder in split file format
  * For new folders larger than existing ones, copies old files and appends new primes
+ * For new folders smaller than existing ones, copies/filters files up to the limit
  * @param {bigint} limit - The upper limit used to generate primes
  * @param {bigint[]} primes - Array of prime numbers
  * @param {bigint|null} largestExisting - Largest existing folder limit (if any)
@@ -247,7 +249,7 @@ function findLargestExistingLimit() {
 function savePrimesToFolder(limit, primes, largestExisting = null) {
   const folderPath = createOutputFolder(limit.toString());
 
-  // If we have a smaller existing folder, copy its files first
+  // Case 1: Creating LARGER folder - copy old files and append new primes
   if (largestExisting !== null && largestExisting < limit) {
     const sourceFolderPath = `${OUTPUT_ROOT}/output-${largestExisting}`;
 
@@ -289,7 +291,93 @@ function savePrimesToFolder(limit, primes, largestExisting = null) {
     }
   }
 
-  // No existing folder to copy from - write all primes
+  // Case 2: Creating SMALLER folder - copy/filter files from larger folder
+  if (largestExisting !== null && largestExisting > limit) {
+    const sourceFolderPath = `${OUTPUT_ROOT}/output-${largestExisting}`;
+
+    if (fsExistsSync(sourceFolderPath)) {
+      const files = fsReadDirSync(sourceFolderPath)
+        .filter(f => f.endsWith('.txt'))
+        .map(f => {
+          const match = f.match(/output(\d+)\.txt/);
+          return {
+            name: f,
+            startPrime: match ? BigInt(match[1]) : 0n
+          };
+        })
+        .sort((a, b) => (a.startPrime > b.startPrime ? 1 : -1));
+
+      let copiedCount = 0;
+      let filteredCount = 0;
+
+      for (const fileInfo of files) {
+        const { name, startPrime } = fileInfo;
+
+        // If file starts beyond our limit, we're done
+        if (startPrime > limit) {
+          break;
+        }
+
+        const sourceFile = `${sourceFolderPath}/${name}`;
+        const content = fsReadFileSync(sourceFile, 'utf8');
+
+        // Extract all primes from the file
+        const filePrimes = [];
+        for (const line of content.split('\n')) {
+          if (line.includes('|')) {
+            const primePart = line.split('|')[1];
+            for (const primeStr of primePart.split(',')) {
+              const trimmed = primeStr.trim();
+              if (trimmed && /^\d+$/.test(trimmed)) {
+                filePrimes.push(BigInt(trimmed));
+              }
+            }
+          }
+        }
+
+        if (filePrimes.length === 0) continue;
+
+        const lastPrime = filePrimes[filePrimes.length - 1];
+
+        // If all primes in file are <= limit, copy entire file
+        if (lastPrime <= limit) {
+          const destFile = `${folderPath}/${name}`;
+          fsCopyFileSync(sourceFile, destFile);
+          copiedCount++;
+        }
+        // If file contains primes crossing the limit, filter it
+        else {
+          const filteredPrimes = filePrimes.filter(p => p <= limit);
+          if (filteredPrimes.length > 0) {
+            // Need to get the starting index from the file
+            const firstLine = content.split('\n')[0];
+            const indexMatch = firstLine.match(/^\((\d+)\)/);
+            const startingIndex = indexMatch ? parseInt(indexMatch[1]) : 0;
+
+            // Write filtered primes to a new file
+            const destFile = `${folderPath}/${name}`;
+            let data = '';
+            for (let i = 0; i < filteredPrimes.length; i++) {
+              if (i % 20 === 0) {
+                const prefix = i === 0 ? '' : '\n';
+                data += `${prefix}(${startingIndex + i}) | `;
+              }
+              data += filteredPrimes[i].toString() + ',';
+            }
+            data += `\n(${startingIndex + filteredPrimes.length})`;
+
+            fsWriteFileSync(destFile, data, 'utf8');
+            filteredCount++;
+          }
+        }
+      }
+
+      console.log(`Copied ${copiedCount} file(s) entirely, filtered ${filteredCount} file(s) from output-${largestExisting}`);
+      return;
+    }
+  }
+
+  // Case 3: No existing folder to copy from - write all primes
   writePrimesToSplitFiles(folderPath, primes);
 }
 

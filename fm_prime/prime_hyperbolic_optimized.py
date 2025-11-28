@@ -222,8 +222,15 @@ def read_primes_from_folder(folder_path):
 
     primes = []
 
-    # Find all Output*.txt files
-    files = sorted([f for f in os.listdir(folder_path) if f.startswith('Output') and f.endswith('.txt')])
+    # Find all Output*.txt and output*.txt files (old format and split file format)
+    files = [f for f in os.listdir(folder_path) if (f.startswith('Output') or f.startswith('output')) and f.endswith('.txt')]
+
+    # Sort by numeric value in filename, not alphabetically
+    def get_file_number(filename):
+        match = re.match(r'[Oo]utput(\d+)\.txt', filename)
+        return int(match.group(1)) if match else 0
+
+    files = sorted(files, key=get_file_number)
 
     for filename in files:
         filepath = os.path.join(folder_path, filename)
@@ -267,6 +274,7 @@ def save_primes_to_folder(limit, primes, largest_existing=None):
     """
     Save primes to output folder in split file format.
     For new folders larger than existing ones, copies old files and appends new primes.
+    For new folders smaller than existing ones, copies/filters files up to the limit.
 
     Args:
         limit: The upper limit used to generate primes
@@ -279,7 +287,7 @@ def save_primes_to_folder(limit, primes, largest_existing=None):
     folder_path = os.path.join(OUTPUT_ROOT, f'output-{limit}')
     os.makedirs(folder_path, exist_ok=True)
 
-    # If we have a smaller existing folder, copy its files first
+    # Case 1: Creating LARGER folder - copy old files and append new primes
     if largest_existing is not None and largest_existing < limit:
         source_folder_path = os.path.join(OUTPUT_ROOT, f'output-{largest_existing}')
 
@@ -316,7 +324,86 @@ def save_primes_to_folder(limit, primes, largest_existing=None):
 
             return
 
-    # No existing folder to copy from - write all primes
+    # Case 2: Creating SMALLER folder - copy/filter files from larger folder
+    if largest_existing is not None and largest_existing > limit:
+        source_folder_path = os.path.join(OUTPUT_ROOT, f'output-{largest_existing}')
+
+        if os.path.exists(source_folder_path):
+            files_info = []
+            for f in os.listdir(source_folder_path):
+                if f.endswith('.txt'):
+                    match = re.match(r'output(\d+)\.txt', f)
+                    if match:
+                        files_info.append({
+                            'name': f,
+                            'start_prime': int(match.group(1))
+                        })
+
+            files_info.sort(key=lambda x: x['start_prime'])
+
+            copied_count = 0
+            filtered_count = 0
+
+            for file_info in files_info:
+                name = file_info['name']
+                start_prime = file_info['start_prime']
+
+                # If file starts beyond our limit, we're done
+                if start_prime > limit:
+                    break
+
+                source_file = os.path.join(source_folder_path, name)
+                with open(source_file, 'r') as f:
+                    content = f.read()
+
+                # Extract all primes from the file
+                file_primes = []
+                for line in content.split('\n'):
+                    if '|' in line:
+                        prime_part = line.split('|', 1)[1]
+                        for prime_str in prime_part.split(','):
+                            trimmed = prime_str.strip()
+                            if trimmed and trimmed.isdigit():
+                                file_primes.append(int(trimmed))
+
+                if not file_primes:
+                    continue
+
+                last_prime = file_primes[-1]
+
+                # If all primes in file are <= limit, copy entire file
+                if last_prime <= limit:
+                    dest_file = os.path.join(folder_path, name)
+                    shutil.copy2(source_file, dest_file)
+                    copied_count += 1
+                # If file contains primes crossing the limit, filter it
+                else:
+                    filtered_primes = [p for p in file_primes if p <= limit]
+                    if filtered_primes:
+                        # Need to get the starting index from the file
+                        first_line = content.split('\n')[0]
+                        index_match = re.match(r'^\((\d+)\)', first_line)
+                        starting_index = int(index_match.group(1)) if index_match else 0
+
+                        # Write filtered primes to a new file
+                        dest_file = os.path.join(folder_path, name)
+                        data = ''
+                        for i, p in enumerate(filtered_primes):
+                            if i % 20 == 0:
+                                prefix = '' if i == 0 else '\n'
+                                data += f'{prefix}({starting_index + i}) | '
+                            data += str(p) + ','
+
+                        data += f'\n({starting_index + len(filtered_primes)})'
+
+                        with open(dest_file, 'w') as f:
+                            f.write(data)
+                        filtered_count += 1
+
+            print(f"Copied {copied_count} file(s) entirely, filtered {filtered_count} file(s) from output-{largest_existing}")
+            return
+
+    # Case 3: No existing folder to copy from - write all primes
     write_primes_to_split_files(folder_path, primes)
 
 
