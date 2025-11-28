@@ -25,7 +25,8 @@ import {
   findLastExistingFolderNumber,
   getAllFromDirectory,
   parseAndSortFiles,
-  primesInFile
+  primesInFile,
+  writePrimesToSplitFiles
 } from './fileOperations.mjs';
 
 import {
@@ -34,7 +35,8 @@ import {
   statSync as fsStatSync,
   rmSync as fsRmSync,
   readFileSync as fsReadFileSync,
-  writeFileSync as fsWriteFileSync
+  writeFileSync as fsWriteFileSync,
+  copyFileSync as fsCopyFileSync
 } from 'fs';
 
 const OUTPUT_ROOT = './output-big';
@@ -129,8 +131,8 @@ export function divisionHyperbolic(numInput) {
 
       // Modular filters eliminate ~94% of non-squares
       if (isSquareMod64(discriminant) &&
-          isSquareMod63(discriminant) &&
-          isSquareMod65(discriminant)) {
+        isSquareMod63(discriminant) &&
+        isSquareMod65(discriminant)) {
 
         const m = isqrt(discriminant);
         if (m * m === discriminant) {
@@ -236,28 +238,59 @@ function findLargestExistingLimit() {
 }
 
 /**
- * Saves primes to output folder in standard format
- * Format: (index) | p1,p2,p3,... (20 primes per line)
+ * Saves primes to output folder in split file format
+ * For new folders larger than existing ones, copies old files and appends new primes
  * @param {bigint} limit - The upper limit used to generate primes
  * @param {bigint[]} primes - Array of prime numbers
+ * @param {bigint|null} largestExisting - Largest existing folder limit (if any)
  */
-function savePrimesToFolder(limit, primes) {
+function savePrimesToFolder(limit, primes, largestExisting = null) {
   const folderPath = createOutputFolder(limit.toString());
-  const filename = 'Output0.txt';
 
-  // Format primes with indices (20 per line)
-  let data = '';
-  for (let i = 0; i < primes.length; i++) {
-    if (i % 20 === 0) {
-      data += (i === 0 ? '' : '\n') + `(${i}) | `;
+  // If we have a smaller existing folder, copy its files first
+  if (largestExisting !== null && largestExisting < limit) {
+    const sourceFolderPath = `${OUTPUT_ROOT}/output-${largestExisting}`;
+
+    if (fsExistsSync(sourceFolderPath)) {
+      // Copy all files from source to destination
+      const files = fsReadDirSync(sourceFolderPath).filter(f => f.endsWith('.txt'));
+
+      for (const file of files) {
+        const sourceFile = `${sourceFolderPath}/${file}`;
+        const destFile = `${folderPath}/${file}`;
+        fsCopyFileSync(sourceFile, destFile);
+      }
+
+      console.log(`Copied ${files.length} file(s) from output-${largestExisting}`);
+
+      // Only write the NEW primes (beyond largestExisting)
+      const newPrimes = primes.filter(p => p > largestExisting);
+
+      if (newPrimes.length > 0) {
+        // Get the count from the last existing file
+        const lastFile = files.sort((a, b) => {
+          const numA = parseInt(a.match(/output(\d+)\.txt/)?.[1] || '0');
+          const numB = parseInt(b.match(/output(\d+)\.txt/)?.[1] || '0');
+          return numB - numA;
+        })[0];
+
+        const lastFilePath = `${folderPath}/${lastFile}`;
+        const content = fsReadFileSync(lastFilePath, 'utf8');
+        const lines = content.trim().split('\n');
+        const lastCountLine = lines[lines.length - 1];
+        const countMatch = lastCountLine.match(/^\((\d+)\)$/);
+        const startingCount = countMatch ? parseInt(countMatch[1]) : primes.length - newPrimes.length;
+
+        // Append new primes with continuing count
+        writePrimesToSplitFiles(folderPath, newPrimes, 1024, startingCount);
+      }
+
+      return;
     }
-    data += primes[i].toString() + ',';
   }
 
-  // Add final count at the end
-  data += `\n(${primes.length})`;
-
-  writeDataToFile(folderPath, filename, data);
+  // No existing folder to copy from - write all primes
+  writePrimesToSplitFiles(folderPath, primes);
 }
 
 /**
@@ -337,7 +370,7 @@ export function sieveHyperbolicOptimized(limitInput) {
     const filteredPrimes = allPrimes.filter(p => p <= limit);
 
     // Save the filtered results
-    savePrimesToFolder(limit, filteredPrimes);
+    savePrimesToFolder(limit, filteredPrimes, largestExisting);
     return filteredPrimes;
   }
 
@@ -345,8 +378,8 @@ export function sieveHyperbolicOptimized(limitInput) {
   const newPrimes = generatePrimesInRange(startFrom - 1n, limit);
   const allPrimes = [...cachedPrimes, ...newPrimes];
 
-  // Save to cache
-  savePrimesToFolder(limit, allPrimes);
+  // Save to cache (pass largestExisting so it can copy old files)
+  savePrimesToFolder(limit, allPrimes, largestExisting);
 
   return allPrimes;
 }
@@ -808,7 +841,7 @@ export function clearAllCache() {
 
   const folders = fsReadDirSync(OUTPUT_ROOT)
     .filter(f => f.startsWith('output-') &&
-                 fsStatSync(`${OUTPUT_ROOT}/${f}`).isDirectory());
+      fsStatSync(`${OUTPUT_ROOT}/${f}`).isDirectory());
 
   for (const folder of folders) {
     fsRmSync(`${OUTPUT_ROOT}/${folder}`, { recursive: true, force: true });

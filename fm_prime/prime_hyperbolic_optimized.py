@@ -32,6 +32,7 @@ before computing expensive square roots.
 import math
 import os
 import json
+import re
 from pathlib import Path
 
 
@@ -262,31 +263,61 @@ def find_largest_existing_limit():
     return max(folders) if folders else None
 
 
-def save_primes_to_folder(limit, primes):
+def save_primes_to_folder(limit, primes, largest_existing=None):
     """
-    Save primes to output folder in standard format.
-    Format: (index) | p1,p2,p3,... (20 primes per line)
+    Save primes to output folder in split file format.
+    For new folders larger than existing ones, copies old files and appends new primes.
 
     Args:
         limit: The upper limit used to generate primes
         primes: List of prime numbers
+        largest_existing: Largest existing folder limit (if any)
     """
+    import shutil
+    from .textUtils import write_primes_to_split_files
+
     folder_path = os.path.join(OUTPUT_ROOT, f'output-{limit}')
     os.makedirs(folder_path, exist_ok=True)
 
-    filename = os.path.join(folder_path, 'Output0.txt')
+    # If we have a smaller existing folder, copy its files first
+    if largest_existing is not None and largest_existing < limit:
+        source_folder_path = os.path.join(OUTPUT_ROOT, f'output-{largest_existing}')
 
-    # Format primes with indices (20 per line)
-    with open(filename, 'w') as f:
-        for i, prime in enumerate(primes):
-            if i % 20 == 0:
-                if i > 0:
-                    f.write('\n')
-                f.write(f'({i}) | ')
-            f.write(f'{prime},')
+        if os.path.exists(source_folder_path):
+            # Copy all files from source to destination
+            files = [f for f in os.listdir(source_folder_path) if f.endswith('.txt')]
 
-        # Add final count at the end
-        f.write(f'\n({len(primes)})')
+            for file in files:
+                source_file = os.path.join(source_folder_path, file)
+                dest_file = os.path.join(folder_path, file)
+                shutil.copy2(source_file, dest_file)
+
+            print(f"Copied {len(files)} file(s) from output-{largest_existing}")
+
+            # Only write the NEW primes (beyond largest_existing)
+            new_primes = [p for p in primes if p > largest_existing]
+
+            if new_primes:
+                # Get the count from the last existing file
+                sorted_files = sorted(files, key=lambda f: int(re.match(r'output(\d+)\.txt', f).group(1)) if re.match(r'output(\d+)\.txt', f) else 0, reverse=True)
+                last_file = sorted_files[0]
+
+                last_file_path = os.path.join(folder_path, last_file)
+                with open(last_file_path, 'r') as f:
+                    content = f.read().strip()
+                    lines = content.split('\n')
+                    last_count_line = lines[-1]
+
+                count_match = re.match(r'^\((\d+)\)$', last_count_line)
+                starting_count = int(count_match.group(1)) if count_match else len(primes) - len(new_primes)
+
+                # Append new primes with continuing count
+                write_primes_to_split_files(folder_path, new_primes, max_file_size_kb=1024, starting_index=starting_count)
+
+            return
+
+    # No existing folder to copy from - write all primes
+    write_primes_to_split_files(folder_path, primes)
 
 
 def generate_primes_in_range(start, limit):
@@ -367,15 +398,15 @@ def sieve_hyperbolic_optimized(limit):
         filtered_primes = [p for p in all_primes if p <= limit]
 
         # Save the filtered results
-        save_primes_to_folder(limit, filtered_primes)
+        save_primes_to_folder(limit, filtered_primes, largest_existing)
         return filtered_primes
 
     # Generate new primes
     new_primes = generate_primes_in_range(start_from - 1, limit)
     all_primes = cached_primes + new_primes
 
-    # Save to cache
-    save_primes_to_folder(limit, all_primes)
+    # Save to cache (pass largest_existing so it can copy old files)
+    save_primes_to_folder(limit, all_primes, largest_existing)
 
     return all_primes
 

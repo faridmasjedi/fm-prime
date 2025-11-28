@@ -268,22 +268,23 @@ def search_files_up_to_number(folder_path, number):
 
     return result
 
-def write_primes_to_split_files(folder_path, primes, max_file_size_kb=1024):
+def write_primes_to_split_files(folder_path, primes, max_file_size_kb=1024, starting_index=0):
     """
     Write primes to folder, splitting into ~1MB files.
     Files are named by their first prime number.
-    
+
     :param folder_path: Output folder path
     :param primes: List of primes (int or str)
     :param max_file_size_kb: Max file size in KB
+    :param starting_index: Starting index for counting (default 0, use when appending to existing)
     """
     if not primes:
         return
-        
+
     current_file = []
     current_size = 0
     max_size_bytes = max_file_size_kb * 1024
-    global_index = 0
+    global_index = starting_index  # Can start from existing count when appending
     
     for prime in primes:
         prime_str = str(prime) + ','
@@ -292,18 +293,18 @@ def write_primes_to_split_files(folder_path, primes, max_file_size_kb=1024):
         if current_size + prime_size > max_size_bytes and current_file:
             first_prime = current_file[0]
             filename = f"output{first_prime}.txt"
-            
+
             data = ""
             for j, p in enumerate(current_file):
                 if j % 20 == 0:
                     prefix = "" if j == 0 else "\n"
                     data += f"{prefix}({global_index + j}) | "
                 data += str(p) + ","
-            
-            data += f"\n({len(current_file)})"
-            
+
+            data += f"\n({global_index + len(current_file)})"
+
             write_data_to_file(folder_path, filename, data)
-            
+
             global_index += len(current_file)
             current_file = []
             current_size = 0
@@ -314,15 +315,15 @@ def write_primes_to_split_files(folder_path, primes, max_file_size_kb=1024):
     if current_file:
         first_prime = current_file[0]
         filename = f"output{first_prime}.txt"
-        
+
         data = ""
         for j, p in enumerate(current_file):
             if j % 20 == 0:
                 prefix = "" if j == 0 else "\n"
                 data += f"{prefix}({global_index + j}) | "
             data += str(p) + ","
-        
-        data += f"\n({len(current_file)})"
-        
+
+        data += f"\n({global_index + len(current_file)})"
+
         write_data_to_file(folder_path, filename, data)
 

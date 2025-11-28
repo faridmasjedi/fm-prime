@@ -362,13 +362,13 @@ const copyFilesAndFormatLastFileUpdated = (num) => {
  * @param {bigint[]} primes - Array of prime BigInts
  * @param {number} maxFileSizeKB - Max file size in KB (default 1024 = 1MB)
  */
-const writePrimesToSplitFiles = (folderPath, primes, maxFileSizeKB = 1024) => {
+const writePrimesToSplitFiles = (folderPath, primes, maxFileSizeKB = 1024, startingIndex = 0) => {
   if (!primes || primes.length === 0) return;
 
   let currentFile = [];
   let currentSize = 0;
   const maxSizeBytes = maxFileSizeKB * 1024;
-  let globalIndex = 0; // Maintain cumulative index across files
+  let globalIndex = startingIndex; // Maintain cumulative index across files (can start from existing count)
 
   for (let i = 0; i < primes.length; i++) {
     const prime = primes[i];
@@ -388,7 +388,7 @@ const writePrimesToSplitFiles = (folderPath, primes, maxFileSizeKB = 1024) => {
         }
         data += currentFile[j].toString() + ',';
       }
-      data += `\n(${currentFile.length})`;
+      data += `\n(${globalIndex + currentFile.length})`;
 
       writeDataToFile(folderPath, filename, data);
 
@@ -416,7 +416,7 @@ const writePrimesToSplitFiles = (folderPath, primes, maxFileSizeKB = 1024) => {
       }
       data += currentFile[j].toString() + ',';
     }
-    data += `\n(${currentFile.length})`;
+    data += `\n(${globalIndex + currentFile.length})`;
 
     writeDataToFile(folderPath, filename, data);
   }
