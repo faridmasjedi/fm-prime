@@ -456,6 +456,266 @@ def get_hyperbolic_cache_stats():
 
 
 # ============================================================================
+# PARALLELIZATION - For Large-Scale Prime Generation
+# ============================================================================
+
+def sieve_hyperbolic_parallel(limit, num_workers=None):
+    """
+    Parallel version of hyperbolic sieve for large limits.
+    Divides the work among multiple CPU cores.
+
+    Args:
+        limit: Upper limit for prime generation
+        num_workers: Number of parallel workers (default: CPU count)
+
+    Returns:
+        List of prime numbers up to limit
+    """
+    from multiprocessing import Pool, cpu_count
+
+    if num_workers is None:
+        num_workers = cpu_count()
+
+    # For small limits, sequential is faster due to overhead
+    if limit < 10000:
+        return sieve_hyperbolic_optimized(limit)
+
+    # Check cache first
+    largest_limit = find_largest_existing_limit()
+    if largest_limit and largest_limit >= limit:
+        primes = read_primes_from_folder(os.path.join(OUTPUT_ROOT, f'output-{largest_limit}'))
+        return [p for p in primes if p <= limit]
+
+    # Divide range into chunks for parallel processing
+    chunk_size = limit // num_workers
+    ranges = []
+
+    start_val = 2 if not largest_limit else largest_limit + 1
+
+    for i in range(num_workers):
+        chunk_start = start_val + (i * chunk_size)
+        chunk_end = start_val + ((i + 1) * chunk_size) if i < num_workers - 1 else limit
+        ranges.append((chunk_start, chunk_end))
+
+    # Process chunks in parallel
+    with Pool(num_workers) as pool:
+        chunk_results = pool.starmap(_process_chunk, ranges)
+
+    # Combine results
+    all_primes = []
+
+    # Add cached primes if any
+    if largest_limit:
+        cached_primes = read_primes_from_folder(os.path.join(OUTPUT_ROOT, f'output-{largest_limit}'))
+        all_primes.extend(cached_primes)
+    else:
+        # Add small primes that might be missed
+        all_primes.extend([2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31])
+
+    # Add new primes from parallel processing
+    for chunk_primes in chunk_results:
+        all_primes.extend(chunk_primes)
+
+    # Remove duplicates and sort
+    all_primes = sorted(set(all_primes))
+    all_primes = [p for p in all_primes if p <= limit]
+
+    # Save to cache
+    save_primes_to_folder(limit, all_primes)
+
+    return all_primes
+
+
+def _process_chunk(start, end):
+    """Helper function to process a chunk of numbers in parallel"""
+    primes = []
+    for num in range(start, end + 1):
+        if is_prime_hyperbolic_core(num):
+            primes.append(num)
+    return primes
+
+
+# ============================================================================
+# SMART CACHE MANAGEMENT
+# ============================================================================
+
+def get_cache_size_mb():
+    """
+    Calculate total size of cache in megabytes.
+
+    Returns:
+        Total cache size in MB
+    """
+    if not os.path.exists(OUTPUT_ROOT):
+        return 0.0
+
+    total_size = 0
+    for root, dirs, files in os.walk(OUTPUT_ROOT):
+        for file in files:
+            filepath = os.path.join(root, file)
+            if os.path.exists(filepath):
+                total_size += os.path.getsize(filepath)
+
+    return total_size / (1024 * 1024)  # Convert to MB
+
+
+def manage_cache_size(max_size_mb=100, keep_largest=True):
+    """
+    Manage cache size by removing old files if cache exceeds limit.
+    Implements LRU (Least Recently Used) eviction strategy.
+
+    Args:
+        max_size_mb: Maximum cache size in megabytes
+        keep_largest: If True, keep largest limit folder, else remove oldest accessed
+
+    Returns:
+        Dictionary with cleanup statistics
+    """
+    current_size = get_cache_size_mb()
+
+    if current_size <= max_size_mb:
+        return {
+            'action': 'none',
+            'current_size_mb': current_size,
+            'max_size_mb': max_size_mb,
+            'removed_folders': []
+        }
+
+    if not os.path.exists(OUTPUT_ROOT):
+        return {
+            'action': 'none',
+            'current_size_mb': 0,
+            'max_size_mb': max_size_mb,
+            'removed_folders': []
+        }
+
+    # Get all cache folders with their sizes and access times
+    cache_folders = []
+    for folder_name in os.listdir(OUTPUT_ROOT):
+        folder_path = os.path.join(OUTPUT_ROOT, folder_name)
+        if folder_name.startswith('output-') and os.path.isdir(folder_path):
+            limit = int(folder_name.replace('output-', ''))
+            folder_size = sum(
+                os.path.getsize(os.path.join(folder_path, f))
+                for f in os.listdir(folder_path)
+                if os.path.isfile(os.path.join(folder_path, f))
+            )
+            access_time = os.path.getatime(folder_path)
+            cache_folders.append({
+                'name': folder_name,
+                'path': folder_path,
+                'limit': limit,
+                'size_mb': folder_size / (1024 * 1024),
+                'access_time': access_time
+            })
+
+    if keep_largest:
+        # Sort by limit (ascending) - remove smallest first
+        cache_folders.sort(key=lambda x: x['limit'])
+    else:
+        # Sort by access time (ascending) - remove least recently used first
+        cache_folders.sort(key=lambda x: x['access_time'])
+
+    # Remove folders until under limit
+    removed = []
+    import shutil
+
+    for folder in cache_folders:
+        if current_size <= max_size_mb:
+            break
+
+        # Remove the folder
+        shutil.rmtree(folder['path'])
+        current_size -= folder['size_mb']
+        removed.append({
+            'name': folder['name'],
+            'limit': folder['limit'],
+            'size_mb': folder['size_mb']
+        })
+
+    return {
+        'action': 'cleaned',
+        'current_size_mb': current_size,
+        'max_size_mb': max_size_mb,
+        'removed_folders': removed,
+        'folders_removed': len(removed)
+    }
+
+
+def compress_cache_files():
+    """
+    Compress cache files using gzip to save disk space.
+
+    Returns:
+        Dictionary with compression statistics
+    """
+    import gzip
+
+    if not os.path.exists(OUTPUT_ROOT):
+        return {
+            'action': 'none',
+            'files_compressed': 0,
+            'space_saved_mb': 0
+        }
+
+    compressed_count = 0
+    total_saved = 0
+
+    for root, dirs, files in os.walk(OUTPUT_ROOT):
+        for filename in files:
+            if filename.endswith('.txt') and not filename.endswith('.txt.gz'):
+                filepath = os.path.join(root, filename)
+                original_size = os.path.getsize(filepath)
+
+                # Compress file
+                gz_filepath = filepath + '.gz'
+                with open(filepath, 'rb') as f_in:
+                    with gzip.open(gz_filepath, 'wb') as f_out:
+                        f_out.writelines(f_in)
+
+                compressed_size = os.path.getsize(gz_filepath)
+
+                # Remove original
+                os.remove(filepath)
+
+                compressed_count += 1
+                total_saved += (original_size - compressed_size)
+
+    return {
+        'action': 'compressed',
+        'files_compressed': compressed_count,
+        'space_saved_mb': total_saved / (1024 * 1024)
+    }
+
+
+def clear_all_cache():
+    """
+    Clear all cached prime data.
+
+    Returns:
+        Dictionary with statistics
+    """
+    import shutil
+
+    if not os.path.exists(OUTPUT_ROOT):
+        return {
+            'action': 'none',
+            'folders_removed': 0
+        }
+
+    folders = [f for f in os.listdir(OUTPUT_ROOT)
+               if f.startswith('output-') and os.path.isdir(os.path.join(OUTPUT_ROOT, f))]
+
+    for folder in folders:
+        shutil.rmtree(os.path.join(OUTPUT_ROOT, folder))
+
+    return {
+        'action': 'cleared',
+        'folders_removed': len(folders)
+    }
+
+
+# ============================================================================
 # DEMONSTRATION
 # ============================================================================
 
