@@ -1,0 +1,64 @@
+{
+  "name": "primefm",
+  "version": "1.0.0",
+  "description": "Comprehensive prime number utilities with multiple algorithms including the novel Hyperbolic Equation Method with intelligent caching",
+  "type": "module",
+  "main": "./src/orchestration/prime.mjs",
+  "exports": {
+    ".": "./src/orchestration/prime.mjs",
+    "./checker": "./src/services/primeChecker.optimized.mjs",
+    "./hybrid": "./src/services/primeHybrid.optimized.mjs",
+    "./wheel210": "./src/services/wheel210.optimized.mjs",
+    "./hyperbolic": "./src/services/primeHyperbolic.optimized.mjs",
+    "./helper": "./src/services/helper.optimized.mjs",
+    "./finder": "./findPrimes.mjs"
+  },
+  "bin": {
+    "primefm": "findPrimes.mjs"
+  },
+  "files": [
+    "src/services/**/*.mjs",
+    "src/orchestration/**/*.mjs",
+    "findPrimes.mjs",
+    "README.md",
+    "USER_GUIDE.md",
+    "METHODS_GUIDE.md",
+    "COMPARISON.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node findPrimes.mjs",
+    "test": "echo \"Run test suite\"",
+    "prepublishOnly": "echo \"Running pre-publish checks...\""
+  },
+  "keywords": [
+    "prime",
+    "prime-numbers",
+    "primes",
+    "primality-test",
+    "sieve",
+    "eratosthenes",
+    "miller-rabin",
+    "wheel-factorization",
+    "hyperbolic",
+    "number-theory",
+    "mathematics",
+    "6k±1",
+    "wheel-210",
+    "cryptography",
+    "algorithm"
+  ],
+  "author": "Farid Masjedi <farid.masjedi1985@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/faridmasjedi/fm-prime.git"
+  },
+  "bugs": {
+    "url": "https://github.com/faridmasjedi/fm-prime/issues"
+  },
+  "homepage": "https://github.com/faridmasjedi/fm-prime#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

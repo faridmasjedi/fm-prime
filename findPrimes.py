@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Prime Number Finder - Interactive Menu System
 Python equivalent of findPrimes.mjs

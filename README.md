@@ -324,7 +324,8 @@ For production use: **Python recommended for performance-critical applications**
 
 **Farid Masjedi**
 
-GitHub: [Farid Masjedi](https://github.com/faridmasjedi)
+- GitHub: [@faridmasjedi](https://github.com/faridmasjedi)
+- Email: farid.masjedi1985@gmail.com
 
 ---
 

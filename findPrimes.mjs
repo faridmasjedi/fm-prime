@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import readline from 'readline';
 import { sieveWheel210 } from './src/services/wheel210.optimized.mjs';
 import { HybridPrimeFinder, sieve6kOptimized } from './src/services/primeHybrid.optimized.mjs';

@@ -1,0 +1,40 @@
+# Development files
+.git
+.gitignore
+.DS_Store
+*.log
+
+# Python files (exclude from npm package)
+*.py
+*.pyc
+__pycache__/
+*.egg-info/
+dist/
+build/
+setup.py
+pyproject.toml
+MANIFEST.in
+
+# Exclude Python source directory
+src/services-py
+
+# Test and investigation files
+investigation/
+education/
+output-big/
+not-prime-indexes/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.cache
+
+# Output files
+*.csv
+*.png
+*.txt
