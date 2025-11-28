@@ -36,7 +36,27 @@ import sys
 sys.path.insert(0, 'src/services-py')
 ```
 
-### Your First Prime Check
+### Interactive Prime Finder (Easiest Way!)
+
+The quickest way to start finding primes is using the interactive menu:
+
+**JavaScript:**
+```bash
+node findPrimes.mjs
+```
+
+**Python:**
+```bash
+python3 findPrimes.py
+```
+
+Both provide an interactive menu where you can:
+1. Choose from 6 different prime-finding methods
+2. Enter any limit (e.g., 10,000,000)
+3. See timing and verification results
+4. View all primes or just the count
+
+### Your First Prime Check (Programmatic)
 
 **JavaScript:**
 ```javascript
@@ -138,7 +158,7 @@ console.log(`Found ${primes.length} primes`);
 console.log(`First 10:`, primes.slice(0, 10));
 ```
 
-#### Wheel-210 sieve (fastest)
+#### Wheel-210 sieve (fastest single-run)
 
 ```javascript
 import { sieveWheel210 } from './src/services/wheel210.optimized.mjs';
@@ -146,6 +166,20 @@ import { sieveWheel210 } from './src/services/wheel210.optimized.mjs';
 // Find all primes up to 100,000
 const primes = sieveWheel210('100000');
 console.log(`Found ${primes.length} primes`);
+```
+
+#### Hyperbolic sieve with caching ⭐ (best for repeated use)
+
+```javascript
+import { sieveHyperbolicOptimized } from './src/services/primeHyperbolic.optimized.mjs';
+
+// Find all primes up to 100,000 (uses file caching)
+const primes = sieveHyperbolicOptimized('100000');
+console.log(`Found ${primes.length} primes`);
+
+// Second call is VERY fast (loads from cache)
+const primes2 = sieveHyperbolicOptimized('50000');  // Instant!
+console.log(`Found ${primes2.length} primes`);
 ```
 
 ### 4. Hybrid Approach
@@ -240,7 +274,7 @@ print(f"Found {len(primes)} primes")
 print(f"First 10: {primes[:10]}")
 ```
 
-#### Wheel-210 sieve (fastest)
+#### Wheel-210 sieve (fastest single-run)
 
 ```python
 from wheel210 import sieve_wheel210
@@ -248,6 +282,20 @@ from wheel210 import sieve_wheel210
 # Find all primes up to 100,000
 primes = sieve_wheel210(100000)
 print(f"Found {len(primes)} primes")
+```
+
+#### Hyperbolic sieve with caching ⭐ (best for repeated use)
+
+```python
+from prime_hyperbolic_optimized import sieve_hyperbolic_optimized
+
+# Find all primes up to 100,000 (uses file caching)
+primes = sieve_hyperbolic_optimized(100000)
+print(f"Found {len(primes)} primes")
+
+# Second call is VERY fast (loads from cache)
+primes2 = sieve_hyperbolic_optimized(50000)  # Instant!
+print(f"Found {len(primes2)} primes")
 ```
 
 ### 4. Hybrid Approach

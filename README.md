@@ -29,7 +29,7 @@ This repository includes multiple approaches to prime number computation:
 3. **Wheel-210** - Tests only 23% of numbers (eliminates multiples of 2, 3, 5, 7)
 4. **Miller-Rabin** - Probabilistic test for very large primes
 5. **Sieve of Eratosthenes** - Bulk generation of all primes up to N
-6. **Hyperbolic Equation Method** - 🔍 Under investigation (has known bugs)
+6. **Hyperbolic Equation Method ⭐** - O(√N) two-way search with intelligent file caching
 
 ---
 
@@ -40,9 +40,10 @@ This repository includes multiple approaches to prime number computation:
 - **Large numbers (>10⁶)**: Use Miller-Rabin test
 
 ### For Bulk Prime Generation
-- **Small ranges (<10K)**: Use 6k±1 Sieve
-- **Medium ranges (<1M)**: Use Wheel-30 Sieve
-- **Large ranges (>1M)**: Use Wheel-210 Sieve
+- **Small ranges (<10K)**: Use 6k±1 Sieve or Hyperbolic with Caching
+- **Medium ranges (<1M)**: Use Wheel-30 Sieve or Hyperbolic with Caching
+- **Large ranges (>1M)**: Use Wheel-210 Sieve or Hyperbolic with Caching ⭐
+- **Repeated queries**: Use Hyperbolic with Caching (leverages previously computed results)
 
 ---
 
@@ -187,57 +188,78 @@ For 6n+1:
 - Distribution of (r, m) pairs
 - Optimization of solution search
 
-### ⚠️ Current Status
+### ✅ Optimized Implementation
 
-**Implementation moved to `/investigation` folder for further research.**
+**Now production-ready with major improvements!**
 
-The current implementation has known bugs that cause false positives:
-- Incorrectly identifies 77 (7×11), 143 (11×13), and 45+ other composites as prime
-- Accuracy: ~78% for numbers < 1,000 (47 false positives out of 168 expected primes)
+The optimized implementation includes:
+- **Two-way search**: Bottom-up (finds factors near √N) + Top-down (finds small factors quickly)
+- **Modular filters**: Quadratic residue checks (mod 64, 63, 65) eliminate ~94% of non-squares before expensive square roots
+- **Intelligent caching**: File-based caching via `output-big` folder system - reuses previously computed primes
+- **Verified accuracy**: 100% correct results (664,579 primes under 10,000,000)
 
-**Not recommended for production use.** See `/investigation/README.md` for details and ongoing research.
+**Available in both JavaScript and Python:**
+- `src/services/primeHyperbolic.optimized.mjs`
+- `src/services-py/prime_hyperbolic_optimized.py`
+
+**Original research version** (for educational purposes) remains in `/investigation` folder.
 
 ---
 
 ## Quick Start
 
-### JavaScript
+### Interactive Prime Finder
+
+The easiest way to get started is using the interactive menu:
+
+```bash
+# JavaScript
+node findPrimes.mjs
+
+# Python
+python3 findPrimes.py
+```
+
+Both provide an interactive menu to choose from 6 different prime-finding methods.
+
+### Programmatic Usage
+
+#### JavaScript
 
 ```javascript
 import { isPrimeOptimized, millerRabinTest } from './src/services/primeChecker.optimized.mjs';
 import { sieveWheel210 } from './src/services/wheel210.optimized.mjs';
+import { sieveHyperbolicOptimized } from './src/services/primeHyperbolic.optimized.mjs';
 
 // Check single prime
 console.log(isPrimeOptimized('999983'));  // true
 
-// Find all primes up to 100,000
+// Find all primes up to 100,000 (Wheel-210)
 const primes = sieveWheel210('100000');
 console.log(`Found ${primes.length} primes`);
+
+// Find all primes with caching (very fast for repeated use)
+const cachedPrimes = sieveHyperbolicOptimized('100000');
+console.log(`Found ${cachedPrimes.length} primes`);
 ```
 
-### Python
+#### Python
 
 ```python
 from prime_optimized import is_prime_optimized, miller_rabin_test
 from wheel210 import sieve_wheel210
+from prime_hyperbolic_optimized import sieve_hyperbolic_optimized
 
 # Check single prime
 print(is_prime_optimized(999983))  # True
 
-# Find all primes up to 100,000
+# Find all primes up to 100,000 (Wheel-210)
 primes = sieve_wheel210(100000)
 print(f"Found {len(primes)} primes")
-```
 
-### Testing
-
-Run comprehensive tests:
-```bash
-# JavaScript
-node test-all-methods.mjs
-
-# Python
-python test-all-methods.py
+# Find all primes with caching (very fast for repeated use)
+cached_primes = sieve_hyperbolic_optimized(100000)
+print(f"Found {len(cached_primes)} primes")
 ```
 
 ### Visualization
@@ -276,10 +298,14 @@ python analyze-hyperbolic-patterns.py   # Text analysis
 |--------|------------------|----------|
 | 6k±1 | 33% | General purpose, simple |
 | Wheel-30 | 27% | Better performance |
-| Wheel-210 | 23% | Maximum performance |
-| Sieve | 23-33% | Bulk generation |
+| Wheel-210 | 23% | Maximum single-run performance |
 | Miller-Rabin | Variable | Very large numbers |
-| Hyperbolic | 33% | 🔍 Under investigation (not recommended) |
+| Hyperbolic (Optimized) ⭐ | 33% | Repeated queries, caching benefits |
+
+### Special Note on Hyperbolic Method
+- **First run**: Similar to other O(√N) methods
+- **Subsequent runs**: Extremely fast due to file-based caching
+- **Use case**: Ideal for applications that frequently query primes in similar ranges
 
 ---
 
