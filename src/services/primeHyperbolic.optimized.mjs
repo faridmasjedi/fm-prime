@@ -194,7 +194,8 @@ function readPrimesFromFolder(folderPath) {
   if (!fsExistsSync(folderPath)) return [];
 
   const files = getAllFromDirectory(folderPath);
-  const sortedFiles = parseAndSortFiles(files.filter(f => f.startsWith('Output')));
+  // Handle both Output*.txt and output*.txt for backward compatibility
+  const sortedFiles = parseAndSortFiles(files.filter(f => f.startsWith('Output') || f.startsWith('output')));
 
   const allPrimes = [];
   for (const file of sortedFiles) {
@@ -243,7 +244,10 @@ function findLargestExistingLimit() {
  */
 function savePrimesToFolder(limit, primes) {
   const folderPath = createOutputFolder(limit.toString());
-  const filename = 'Output0.txt';
+
+  // Use first prime in filename (consistent with split file system)
+  const firstPrime = primes.length > 0 ? primes[0].toString() : '2';
+  const filename = `output${firstPrime}.txt`;
 
   // Format primes with indices (20 per line)
   let data = '';

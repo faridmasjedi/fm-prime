@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fm-prime"
-version = "1.0.4"
+version = "1.0.6"
 description = "Comprehensive prime number utilities with multiple algorithms including the novel Hyperbolic Equation Method with intelligent caching"
 readme = "README.md"
 requires-python = ">=3.7"

@@ -221,8 +221,8 @@ def read_primes_from_folder(folder_path):
 
     primes = []
 
-    # Find all Output*.txt files
-    files = sorted([f for f in os.listdir(folder_path) if f.startswith('Output') and f.endswith('.txt')])
+    # Find all output*.txt files (case-insensitive for backward compatibility)
+    files = sorted([f for f in os.listdir(folder_path) if (f.startswith('Output') or f.startswith('output')) and f.endswith('.txt')])
 
     for filename in files:
         filepath = os.path.join(folder_path, filename)
@@ -266,6 +266,7 @@ def save_primes_to_folder(limit, primes):
     """
     Save primes to output folder in standard format.
     Format: (index) | p1,p2,p3,... (20 primes per line)
+    Files named by first prime: output{firstPrime}.txt
 
     Args:
         limit: The upper limit used to generate primes
@@ -274,7 +275,9 @@ def save_primes_to_folder(limit, primes):
     folder_path = os.path.join(OUTPUT_ROOT, f'output-{limit}')
     os.makedirs(folder_path, exist_ok=True)
 
-    filename = os.path.join(folder_path, 'Output0.txt')
+    # Use first prime in filename (consistent with split file system)
+    first_prime = primes[0] if primes else 2
+    filename = os.path.join(folder_path, f'output{first_prime}.txt')
 
     # Format primes with indices (20 per line)
     with open(filename, 'w') as f:
