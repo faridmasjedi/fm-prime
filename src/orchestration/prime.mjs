@@ -49,6 +49,13 @@ import {
   generatePrimesUpToUpdated, // Main 3-1 ( take too much time | This will create primes from first prime | quicker than generatePrimesUpTo)
 } from "../services/primeGenerator.mjs";
 
-import { 
+import {
   calculatePrimesText // Quickest method
 } from "../services/primeIndex.mjs";
+
+import {
+  isPrimeHyperbolicOptimized, // ***Main 16 | Super quick with caching | O(√N) complexity
+  sieveHyperbolicOptimized, // ***Main 15 | Super quick with caching | Two-way search hyperbolic
+  divisionHyperbolic, // **Main 17 | Finds smallest divisor using hyperbolic equations
+  getHyperbolicCacheStats, // Utility to check cache status
+} from "../services/primeHyperbolic.optimized.mjs";

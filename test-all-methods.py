@@ -16,7 +16,11 @@ from prime_optimized import (
     Wheel30
 )
 from wheel210 import Wheel210, sieve_wheel210
-from prime_hyperbolic import is_prime_hyperbolic, division_hyperbolic
+from prime_hyperbolic_optimized import (
+    is_prime_hyperbolic_optimized,
+    sieve_hyperbolic_optimized,
+    division_hyperbolic
+)
 
 # ============================================================================
 # TEST DATA
@@ -86,13 +90,13 @@ passed, failed = test_method(
 )
 print(f"  ✓ Passed: {passed}/{passed + failed}")
 
-# Test Hyperbolic (for smaller numbers where it works)
-print('\nTesting Hyperbolic Equations...')
+# Test Hyperbolic (optimized with caching)
+print('\nTesting Hyperbolic Equations (Optimized)...')
 hyperbolic_test_nums = [101, 143, 221, 323, 1517]
 hyperbolic_expected = [True, False, False, False, True]
 passed, failed = test_method(
-    'is_prime_hyperbolic',
-    is_prime_hyperbolic,
+    'is_prime_hyperbolic_optimized',
+    is_prime_hyperbolic_optimized,
     hyperbolic_test_nums,
     hyperbolic_expected
 )

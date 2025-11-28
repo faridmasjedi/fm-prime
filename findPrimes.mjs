@@ -2,7 +2,7 @@ import readline from 'readline';
 import { sieveWheel210 } from './src/services/wheel210.optimized.mjs';
 import { HybridPrimeFinder, sieve6kOptimized } from './src/services/primeHybrid.optimized.mjs';
 import { isPrimeOptimized } from './src/services/primeChecker.optimized.mjs';
-import { sieveHyperbolic } from './investigation/primeHyperbolic.optimized.mjs';
+import { sieveHyperbolicOptimized } from './src/services/primeHyperbolic.optimized.mjs';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -109,10 +109,10 @@ const methods = {
     run: (limit) => sieveTrialDivision(limit)
   },
   '6': {
-    name: 'Hyperbolic Hybrid Sieve',
-    description: 'Uses hyperbolic equations + trial division fallback',
+    name: 'Hyperbolic Sieve with Caching ⭐',
+    description: 'O(√N) two-way search + file caching - VERY FAST for repeated use',
     category: 'Optimized Sieves',
-    run: (limit) => sieveHyperbolic(limit.toString())
+    run: (limit) => sieveHyperbolicOptimized(limit.toString())
   }
 };
 
