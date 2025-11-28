@@ -11,7 +11,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="fm-prime",
-    version="1.0.0",
+    version="1.0.4",
     author="Farid Masjedi",
     author_email="farid.masjedi1985@gmail.com",
     description="Comprehensive prime number utilities with multiple algorithms including the novel Hyperbolic Equation Method with intelligent caching",
@@ -23,8 +23,8 @@ setup(
         "Documentation": "https://github.com/faridmasjedi/fm-prime#readme",
         "Source Code": "https://github.com/faridmasjedi/fm-prime",
     },
-    packages=find_packages(where="src/services-py"),
-    package_dir={"": "src/services-py"},
+    packages=["fm_prime"],
+    package_dir={"fm_prime": "fm_prime"},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fm-prime"
-version = "1.0.0"
+version = "1.0.4"
 description = "Comprehensive prime number utilities with multiple algorithms including the novel Hyperbolic Equation Method with intelligent caching"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -56,7 +56,8 @@ Repository = "https://github.com/faridmasjedi/fm-prime.git"
 fm-prime = "findPrimes:main"
 
 [tool.setuptools.packages.find]
-where = ["src/services-py"]
+where = ["."]
+include = ["fm_prime*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.md", "*.txt"]
