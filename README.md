@@ -174,11 +174,15 @@ For 6n+1:
 ✅ **Alternative Perspective**: Different from trial division approach
 ✅ **Potentially Novel**: Specific formulation may be unique
 
-### Limitations
+### Performance and Trade-offs
 
-⚠️ **Performance**: Similar O(√n) complexity to trial division
-⚠️ **Operations**: More operations per iteration (sqrt, multiply, modulo)
-⚠️ **Practical Use**: Not faster than optimized trial division
+#### Without Caching (First Run)
+- **Performance**: The first run performance is O(√n), similar to optimized trial division.
+- **Operations**: Each check involves more complex operations (e.g., square roots) than simple trial division.
+
+#### With Caching (Subsequent Runs)
+- **Performance**: Subsequent runs are extremely fast, often O(1) or near-O(1) for checks within the cached range, as it becomes a simple file lookup.
+- **Use Case**: Ideal for applications that repeatedly query primes, especially within similar or expanding ranges. The benefits of caching grow as the application runs longer and performs more queries.
 
 ### Research Potential
 

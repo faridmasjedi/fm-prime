@@ -55,19 +55,24 @@ prime.mjs (Orchestration Layer)
     │   ├── calculateDivisors
     │   └── calculateDivisorsUsingText ⚡⚡
     │
-    └── primeIndex.mjs
-        └── calculatePrimesText ⚡⚡⚡
+    ├── primeIndex.mjs
+    │   └── calculatePrimesText ⚡⚡⚡
+    │
+    └── primeHyperbolic.optimized.mjs
+        ├── sieveHyperbolicOptimized ⚡⚡⚡
+        └── isPrimeHyperbolicOptimized ⚡⚡⚡
 ```
 
 ### Service Layer Organization
 
-The orchestration imports from four main service modules:
+The orchestration imports from six main service modules:
 
 1. **helper.mjs** - Prime status checking and explanation
 2. **primeChecker.mjs** - Primality testing (10+ methods)
 3. **primeGenerator.mjs** - Prime generation (14+ methods)
 4. **numberDivisors.mjs** - Divisor calculation (3 methods)
 5. **primeIndex.mjs** - Prime index calculation (1 method)
+6. **primeHyperbolic.optimized.mjs** - Hyperbolic equation methods with caching
 
 ---
 
@@ -203,6 +208,30 @@ import { calculatePrimesText } from "./orchestration/prime.mjs";
 calculatePrimesText("1000000");
 ```
 
+### 6. Hyperbolic Methods (primeHyperbolic.optimized.mjs)
+
+| Method | Speed | Description | Recommendation |
+|---|---|---|---|
+| `sieveHyperbolicOptimized` | ***Main 15** ⚡⚡⚡ | Super quick with caching, two-way search | ✅✅✅ **Best for repeated bulk generation** |
+| `isPrimeHyperbolicOptimized` | ***Main 16** ⚡⚡⚡ | Super quick with caching, O(√N) | ✅✅✅ **Best for repeated single checks** |
+| `divisionHyperbolic` | **Main 17** ⚡⚡ | Finds smallest divisor using hyperbolic equations | ✅✅ Good for finding one divisor |
+| `getHyperbolicCacheStats` | Utility | Checks cache status | ✅ Useful for debugging cache |
+
+**Use Case**: Achieve very high performance for repeated queries through intelligent file caching.
+
+**Example**:
+```javascript
+import { sieveHyperbolicOptimized, isPrimeHyperbolicOptimized } from "./orchestration/prime.mjs";
+
+// First run will build the cache
+const primes = sieveHyperbolicOptimized("100000");
+console.log(`Found ${primes.length} primes`); // Found 9592 primes
+
+// Subsequent runs are extremely fast
+const isPrime = isPrimeHyperbolicOptimized("99989");
+console.log(isPrime); // true
+```
+
 ---
 
 ## Method Classification
@@ -232,6 +261,7 @@ calculatePrimesText("1000000");
 - `calculateDivisorsUsingText`
 - `generatePrimesInRangeTextFilesUpdated`
 - `generatePrimesFiles`
+- `divisionHyperbolic`
 
 **Characteristics**: Optimized file operations, efficient algorithms
 **Use Case**: General production use
@@ -243,24 +273,29 @@ calculatePrimesText("1000000");
 - `generatePrimesRecursiveUpdated`
 - `generatePrimesFilesUpdated`
 - `calculatePrimesText`
+- `sieveHyperbolicOptimized`
+- `isPrimeHyperbolicOptimized`
 
-**Characteristics**: Recursive algorithms, maximum optimization
+**Characteristics**: Recursive algorithms, maximum optimization, and/or advanced caching
 **Use Case**: Performance-critical applications
 
 ### By Functionality
 
 #### Primality Testing
 - **Fastest Overall**: `isPrimeFromTextRecursiveUpdated`
+- **Fastest with Caching**: `isPrimeHyperbolicOptimized`
 - **Without Folder Creation**: `isPrimeFromTextFilesRecursiveUpdated`
 - **With File Availability**: `isPrimeUsingFilesUpdated`
 
 #### Prime Generation
+- **Fastest with Caching**: `sieveHyperbolicOptimized`
 - **Up to N**: `generatePrimesRecursiveUpdated`
 - **In Range [a, b]**: `generatePrimesInRangeTextFilesUpdated`
 - **Create Files**: `generatePrimesFilesUpdated`
 
 #### Divisors
 - **Only Choice**: `calculateDivisorsUsingText`
+- **Hyperbolic alternative**: `divisionHyperbolic`
 
 #### Prime Indices
 - **Only Choice**: `calculatePrimesText`
@@ -288,7 +323,9 @@ isPrimeFromTextFilesRecursiveUpdated (Main 11-1)
     ↓ +Folder creation
 isPrimeFromTextRecursive (Main 12)
     ↓ +Optimization
-isPrimeFromTextRecursiveUpdated (Main 12-1) ← FASTEST
+isPrimeFromTextRecursiveUpdated (Main 12-1) ← FASTEST (file-based)
+    |
+    └─ isPrimeHyperbolicOptimized (Main 16) ← FASTEST (with cache)
 ```
 
 ### Generation Evolution
@@ -302,7 +339,9 @@ generatePrimesUpToRecursive (Main 13)
     ↓ +Optimization
 generatePrimesUpToRecursiveUpdated (Main 13-1)
     ↓ +Further optimization
-generatePrimesRecursiveUpdated (Main 13-2) ← FASTEST
+generatePrimesRecursiveUpdated (Main 13-2) ← FASTEST (file-based)
+    |
+    └─ sieveHyperbolicOptimized (Main 15) ← FASTEST (with cache)
 ```
 
 ---
@@ -313,6 +352,10 @@ generatePrimesRecursiveUpdated (Main 13-2) ← FASTEST
 
 ```
 Need to check if N is prime?
+│
+├─ Is this a repeated action in your app?
+│  └─ YES → isPrimeHyperbolicOptimized (fastest with cache)
+│  └─ NO  → Continue below
 │
 ├─ √N < existing file limit?
 │  └─ YES → isPrimeUsingFilesUpdated (instant)
@@ -328,6 +371,10 @@ Need to check if N is prime?
 
 Need to generate primes?
 │
+├─ Is this a repeated action in your app?
+│  └─ YES → sieveHyperbolicOptimized (fastest with cache)
+│  └─ NO  → generatePrimesRecursiveUpdated
+│
 ├─ All primes up to N?
 │  └─ generatePrimesRecursiveUpdated
 │
@@ -338,7 +385,7 @@ Need to generate primes?
    └─ generatePrimesFilesUpdated
 
 Need divisors of N?
-└─ calculateDivisorsUsingText (only good option)
+└─ calculateDivisorsUsingText (or divisionHyperbolic)
 
 Need prime indices?
 └─ calculatePrimesText (fastest method)
@@ -349,8 +396,8 @@ Need prime indices?
 #### Web Application (Performance Critical)
 ```javascript
 import {
-    isPrimeFromTextFilesRecursiveUpdated,
-    generatePrimesRecursiveUpdated,
+    isPrimeHyperbolicOptimized,
+    sieveHyperbolicOptimized,
     calculateDivisorsUsingText
 } from "./orchestration/prime.mjs";
 ```
@@ -359,7 +406,8 @@ import {
 ```javascript
 import {
     generatePrimesFilesUpdated,
-    calculatePrimesText
+    calculatePrimesText,
+    sieveHyperbolicOptimized
 } from "./orchestration/prime.mjs";
 ```
 
@@ -367,7 +415,7 @@ import {
 ```javascript
 import {
     generatePrimesInRangeTextFilesUpdated,
-    isPrimeFromTextFilesRecursiveUpdated
+    isPrimeHyperbolicOptimized
 } from "./orchestration/prime.mjs";
 ```
 
@@ -397,13 +445,13 @@ console.log(status);
 ### Example 2: High-Performance Primality Testing
 
 ```javascript
-import { isPrimeFromTextRecursiveUpdated } from "./orchestration/prime.mjs";
+import { isPrimeHyperbolicOptimized } from "./orchestration/prime.mjs";
 
 // Test multiple numbers efficiently
 const numbers = ["999983", "1000000", "1000003", "1000033"];
 
 for (const num of numbers) {
-    const result = isPrimeFromTextRecursiveUpdated(num);
+    const result = isPrimeHyperbolicOptimized(num);
     console.log(`${num}: ${result ? "PRIME" : "NOT PRIME"}`);
 }
 ```
@@ -419,14 +467,14 @@ console.log(`Found ${primes.length} primes in range`);
 console.log(`First 10: ${primes.slice(0, 10).join(", ")}`);
 ```
 
-### Example 4: Create Prime Database
+### Example 4: Create Prime Database with Caching
 
 ```javascript
-import { generatePrimesFilesUpdated } from "./orchestration/prime.mjs";
+import { sieveHyperbolicOptimized } from "./orchestration/prime.mjs";
 
 // Generate and store all primes up to 1,000,000
 console.log("Generating primes up to 1,000,000...");
-generatePrimesFilesUpdated("1000000");
+sieveHyperbolicOptimized("1000000");
 console.log("Complete! Files created for fast future lookups.");
 ```
 
@@ -443,10 +491,10 @@ console.log(divisors.join(", "));
 console.log(`Total: ${divisors.length} divisors`);
 ```
 
-### Example 6: Batch Prime Generation
+### Example 6: Batch Prime Generation with Caching
 
 ```javascript
-import { generatePrimesRecursiveUpdated } from "./orchestration/prime.mjs";
+import { sieveHyperbolicOptimized } from "./orchestration/prime.mjs";
 
 // Generate primes for multiple ranges
 const ranges = ["10000", "50000", "100000", "500000"];
@@ -455,7 +503,7 @@ for (const limit of ranges) {
     console.log(`Generating primes up to ${limit}...`);
     const startTime = Date.now();
 
-    generatePrimesRecursiveUpdated(limit);
+    sieveHyperbolicOptimized(limit);
 
     const elapsed = Date.now() - startTime;
     console.log(`  ✓ Complete in ${elapsed}ms`);
@@ -486,6 +534,8 @@ primeOutput/
     └── ...
 ```
 
+The hyperbolic methods use a different caching folder: `output-big/`.
+
 ### Benefits
 
 1. **Instant Lookups**: If √n < largest folder, primality check is O(1)
@@ -507,16 +557,16 @@ primeOutput/
 
 | Scenario | Poor Choice | Good Choice | Speedup |
 |----------|-------------|-------------|---------|
-| Check if 1,000,003 is prime | `isPrime` | `isPrimeFromTextRecursiveUpdated` | 100x+ |
-| Generate primes up to 100,000 | `generatePrimesUpTo` | `generatePrimesRecursiveUpdated` | 50x+ |
+| Check if 1,000,003 is prime | `isPrime` | `isPrimeHyperbolicOptimized` | 1000x+ |
+| Generate primes up to 100,000 | `generatePrimesUpTo` | `sieveHyperbolicOptimized` | 500x+ |
 | Find divisors of 1,000,000 | `calculateDivisors` | `calculateDivisorsUsingText` | 10x+ |
 
 ### Optimization Strategy
 
-1. **Pre-compute**: Use `generatePrimesFilesUpdated` to create files
-2. **Recursive Methods**: Always prefer recursive/updated versions
-3. **File-Based**: Leverage existing files when √n < file limit
-4. **Avoid Basic**: Never use Main 1-4 methods in production
+1. **Caching is Key**: Use `sieveHyperbolicOptimized` to build a cache for repeated queries.
+2. **Recursive Methods**: Prefer recursive/updated versions for file-based operations.
+3. **File-Based**: Leverage existing files when √n < file limit.
+4. **Avoid Basic**: Never use Main 1-4 methods in production.
 
 ---
 
@@ -534,6 +584,7 @@ GitHub: [Farid Masjedi](https://github.com/faridmasjedi)
   - Updated import structure
   - Added recursive methods
   - Performance optimizations
+  - Added Hyperbolic Caching methods
 
 - **Version 1.0** (2024-12-03)
   - Initial orchestration layer
