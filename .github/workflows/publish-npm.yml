@@ -1,0 +1,107 @@
+name: Publish to npm
+
+on:
+  # Trigger on new version tags
+  push:
+    tags:
+      - 'v*.*.*'
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version type to publish'
+        required: true
+        type: choice
+        options:
+          - standard
+          - data
+          - both
+        default: 'standard'
+
+# IMPORTANT: Required for trusted publishing (OIDC)
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish-standard:
+    if: github.event_name == 'push' || github.event.inputs.version_type == 'standard' || github.event.inputs.version_type == 'both'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Verify package.json version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Publishing standard version: $VERSION"
+
+      - name: Publish to npm (Standard Version)
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Verify publication
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "✅ Published primefm@$VERSION"
+          npm view primefm@$VERSION
+
+  publish-data:
+    if: github.event.inputs.version_type == 'data' || github.event.inputs.version_type == 'both'
+    runs-on: ubuntu-latest
+    needs: publish-standard
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Prepare data version
+        run: |
+          cp package.json package.json.backup
+          cp package-data.json package.json
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Publishing data version: $VERSION"
+
+      - name: Publish to npm (Data Version)
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Restore package.json
+        if: always()
+        run: |
+          if [ -f package.json.backup ]; then
+            mv package.json.backup package.json
+          fi
+
+      - name: Set latest tag to standard version
+        run: |
+          STANDARD_VERSION=$(node -p "require('./package.json').version")
+          npm dist-tag add primefm@$STANDARD_VERSION latest
+          echo "✅ Set primefm@$STANDARD_VERSION as latest"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Verify publication
+        run: |
+          cp package-data.json package.json.temp
+          DATA_VERSION=$(node -p "require('./package.json.temp').version")
+          rm package.json.temp
+          echo "✅ Published primefm@$DATA_VERSION"
+          npm view primefm@$DATA_VERSION
+          echo ""
+          echo "Current dist-tags:"
+          npm view primefm dist-tags
