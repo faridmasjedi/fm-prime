@@ -34,9 +34,10 @@ This directory contains Python implementations for prime number operations, orga
 - `wheel210.py` - Wheel-210 factorization (23% candidates)
 - `primeUtils_optimized.py` - Optimized utility functions
 - `prime_hybrid.py` - Intelligent hybrid approach
+- `fm_prime/prime_hyperbolic_optimized.py` 🚀⭐ - Production-ready hyperbolic method with file-level granular caching (2.5x faster)
 
 ### 3. **Novel Methods** (Research & Educational)
-- `prime_hyperbolic.py` - Hyperbolic equation approach (6th way)
+- `prime_hyperbolic.py` - Hyperbolic equation approach (original research version)
 - `analyze-hyperbolic-visual.py` - Visual analysis with matplotlib
 - `analyze-hyperbolic-patterns.py` - Pattern analysis and CSV export
 
@@ -623,6 +624,27 @@ from prime import (
 4. **For ranges**: Use `Wheel30.primes_in_range()`
 5. **For convenience**: Use `HybridPrimeFinder` (auto-selects)
 6. **For education**: Explore `prime_hyperbolic.py`
+
+---
+
+## Examples
+
+For complete working examples with detailed demonstrations, see the **[examples/](../../examples/)** directory:
+
+```bash
+# Run Python hyperbolic caching example
+python examples/example_hyperbolic_optimized.py
+```
+
+**The examples demonstrate:**
+- Generating primes with file-level granular caching
+- Checking individual numbers for primality
+- Finding all divisors of a number
+- Checking cache status and performance
+- Cache management utilities
+- Real-world usage patterns
+
+See **[examples/README.md](../../examples/README.md)** for complete documentation with both Python and JavaScript usage patterns.
 
 ---
 

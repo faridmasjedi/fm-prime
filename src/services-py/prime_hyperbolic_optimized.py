@@ -31,9 +31,8 @@ before computing expensive square roots.
 
 import math
 import os
-import json
-from pathlib import Path
-from textUtils import write_primes_to_split_files
+import re
+from .textUtils import write_primes_to_split_files
 
 
 # ============================================================================
@@ -181,6 +180,56 @@ def division_hyperbolic(num):
     return num
 
 
+def get_all_divisions_hyperbolic(num):
+    """
+    Find all prime divisors of a number using the hyperbolic method.
+
+    Args:
+        num: The number to factorize.
+
+    Returns:
+        A list of all prime divisors.
+    """
+    if not isinstance(num, int) or num < 1:
+        raise ValueError("Input must be a positive integer.")
+
+    if num == 1:
+        return [1]
+
+    factors = []
+    
+    # Handle factors of 2
+    while num % 2 == 0:
+        factors.append(2)
+        num //= 2
+        
+    # Handle factors of 3
+    while num % 3 == 0:
+        factors.append(3)
+        num //= 3
+
+    # Handle factors of 5
+    while num % 5 == 0:
+        factors.append(5)
+        num //= 5
+
+    while num > 1:
+        # Use the optimized hyperbolic division to find the smallest prime factor
+        divisor = division_hyperbolic(num)
+        
+        # The divisor is the smallest prime factor of the current num
+        factors.append(divisor)
+        
+        # If the divisor is the number itself, it's prime, and we are done
+        if divisor == num:
+            break
+            
+        # Divide the number by the found divisor and continue
+        num //= divisor
+        
+    return sorted(factors)
+
+
 def is_prime_hyperbolic_core(num):
     """
     Check if a number is prime using hyperbolic method (no caching).
@@ -222,7 +271,7 @@ def read_primes_from_folder(folder_path):
 
     primes = []
 
-    # Find all Output*.txt and output*.txt files
+    # Find all output*.txt files (case-insensitive for backward compatibility)
     # Sort numerically by extracting the number from filename
     files = [f for f in os.listdir(folder_path) if (f.startswith('Output') or f.startswith('output')) and f.endswith('.txt')]
     def extract_number(filename):
@@ -315,25 +364,184 @@ def generate_primes_in_range(start, limit):
 
 
 # ============================================================================
+# FILE-LEVEL GRANULAR CACHING
+# ============================================================================
+
+def find_best_cache_folder_for_target(target):
+    """
+    Find the best cache folder that contains files covering the target range.
+
+    Args:
+        target: Target number to find primes up to
+
+    Returns:
+        Path to best folder or None
+    """
+    if not os.path.exists(OUTPUT_ROOT):
+        return None
+
+    folders = []
+    for f in os.listdir(OUTPUT_ROOT):
+        if not f.startswith('output-'):
+            continue
+        folder_path = os.path.join(OUTPUT_ROOT, f)
+        if not os.path.isdir(folder_path):
+            continue
+
+        # Check if folder has any files
+        txt_files = [file for file in os.listdir(folder_path)
+                    if file.startswith('output') and file.endswith('.txt')]
+        if not txt_files:
+            continue
+
+        limit = int(f.replace('output-', ''))
+        folders.append({'limit': limit, 'path': folder_path})
+
+    if not folders:
+        return None
+
+    # Find folder with limit >= target (smallest one that covers our range)
+    covering = [f for f in folders if f['limit'] >= target]
+    covering.sort(key=lambda x: x['limit'])
+
+    if covering:
+        return covering[0]['path']
+
+    # If no folder covers target, return the largest one (we'll need to extend)
+    folders.sort(key=lambda x: x['limit'], reverse=True)
+    return folders[0]['path'] if folders else None
+
+
+def get_file_ranges_in_folder(folder_path):
+    """
+    Get file ranges in a folder by parsing filenames.
+
+    Args:
+        folder_path: Path to cache folder
+
+    Returns:
+        Sorted list of dicts with filename, start_prime, and path
+    """
+    if not os.path.exists(folder_path):
+        return []
+
+    files = []
+    for f in os.listdir(folder_path):
+        if f.startswith('output') and f.endswith('.txt'):
+            # Extract the starting prime from filename
+            start_prime = int(f.replace('output', '').replace('.txt', ''))
+            files.append({
+                'filename': f,
+                'start_prime': start_prime,
+                'path': os.path.join(folder_path, f)
+            })
+
+    # Sort by start prime
+    files.sort(key=lambda x: x['start_prime'])
+    return files
+
+
+# Compile regex once for reuse (performance optimization)
+PRIME_LINE_REGEX = re.compile(r'\((\d+)\)\s*\|\s*(.+)')
+
+
+def parse_primes_from_line(line, limit=None):
+    """
+    Parse primes from a line of text.
+
+    Args:
+        line: Line in format "(index) | prime1,prime2,..."
+        limit: Optional limit to filter primes
+
+    Returns:
+        List of primes or None if line is invalid
+    """
+    line = line.strip()
+    if not line:
+        return None
+
+    match = PRIME_LINE_REGEX.match(line)
+    if not match:
+        return None
+
+    primes_str = match.group(2)
+    prime_strings = primes_str.split(',')
+    primes = []
+
+    for s in prime_strings:
+        s = s.strip()
+        if not s:
+            continue
+
+        try:
+            prime = int(s)
+            if limit is None or prime <= limit:
+                primes.append(prime)
+            # Early termination if we exceeded limit
+            if limit is not None and prime > limit:
+                break
+        except ValueError:
+            # Skip invalid numbers
+            pass
+
+    return primes if primes else None
+
+
+def copy_primes_from_file(file_path, all_primes, limit=None):
+    """
+    Copy all primes from a file into the all_primes list.
+
+    Args:
+        file_path: Path to file
+        all_primes: Target list to append to
+        limit: Optional limit for filtering
+
+    Returns:
+        True if found exact match (for early termination)
+    """
+    with open(file_path, 'r') as f:
+        content = f.read()
+
+    lines = content.split('\n')
+
+    for line in lines:
+        primes = parse_primes_from_line(line, limit)
+        if primes:
+            all_primes.extend(primes)
+
+            # Check if we found exact match (for early termination)
+            if limit is not None and primes[-1] == limit:
+                return True  # Found exact match
+
+    return False  # No exact match found
+
+
+# ============================================================================
 # PUBLIC API - OPTIMIZED METHODS WITH CACHING
 # ============================================================================
 
 def sieve_hyperbolic_optimized(limit):
     """
-    Generate all primes up to a limit using cached data when available.
+    File-Level Granular Sieve with Smart Copying.
 
-    Strategy:
-    1. Check if exact folder exists → load and return
-    2. Find largest cache < limit → load and extend from there
-    3. Find largest cache > limit → load and filter
-    4. No cache → generate from scratch
-    5. Always save results for future use
+    Instead of loading entire folders into memory, this function:
+    1. Finds the best cache folder that covers the target range
+    2. Copies complete files when their entire range is below target
+    3. Only filters/processes the last file that crosses the target
+
+    Algorithm:
+    - For target 7931507 in folder output-10000000:
+      - Copy output2.txt completely (< 1903483)
+      - Copy output1903483.txt completely (< 3850199)
+      - Copy output3850199.txt completely (< 5869091)
+      - Filter output5869091.txt to include only primes <= 7931507
+      - Skip output7931513.txt (all primes > target)
 
     Args:
-        limit: Upper limit for prime generation
+        limit: Find all primes up to this number
 
     Returns:
-        List of all primes up to limit
+        List of primes up to limit
     """
     if limit < 2:
         return []
@@ -341,54 +549,129 @@ def sieve_hyperbolic_optimized(limit):
     # Check if exact folder exists
     exact_folder = os.path.join(OUTPUT_ROOT, f'output-{limit}')
     if os.path.exists(exact_folder):
+        print(f"Found exact cache folder: {exact_folder}")
         return read_primes_from_folder(exact_folder)
 
-    # Find largest existing cache
-    largest_existing = find_largest_existing_limit()
+    # Find best cache folder
+    best_folder = find_best_cache_folder_for_target(limit)
+    if not best_folder:
+        print("No cache folder found, generating from scratch")
+        new_primes = generate_primes_in_range(1, limit)
+        save_primes_to_folder(limit, new_primes)
+        return new_primes
 
-    start_from = 2
-    cached_primes = []
+    print(f"Using cache folder: {best_folder}")
 
-    if largest_existing is not None and largest_existing < limit:
-        # Use existing cache and continue from there
-        cached_folder = os.path.join(OUTPUT_ROOT, f'output-{largest_existing}')
-        cached_primes = read_primes_from_folder(cached_folder)
-        start_from = largest_existing + 1
-    elif largest_existing is not None and largest_existing >= limit:
-        # Requested limit is smaller - just filter existing
-        cached_folder = os.path.join(OUTPUT_ROOT, f'output-{largest_existing}')
-        all_primes = read_primes_from_folder(cached_folder)
-        filtered_primes = [p for p in all_primes if p <= limit]
+    # Get files in folder sorted by start prime
+    files = get_file_ranges_in_folder(best_folder)
+    if not files:
+        print("No files found in cache folder")
+        new_primes = generate_primes_in_range(1, limit)
+        save_primes_to_folder(limit, new_primes)
+        return new_primes
 
-        # Save the filtered results
-        save_primes_to_folder(limit, filtered_primes)
-        return filtered_primes
+    print(f"Found {len(files)} cache files")
 
-    # Generate new primes
-    new_primes = generate_primes_in_range(start_from - 1, limit)
-    all_primes = cached_primes + new_primes
+    # Process files
+    all_primes = []
 
-    # Save to cache
+    for i, current_file in enumerate(files):
+        next_file = files[i + 1] if i < len(files) - 1 else None
+
+        print(f"Processing file: {current_file['filename']} (starts at {current_file['start_prime']})")
+
+        # Skip files that start beyond target
+        if current_file['start_prime'] > limit:
+            print(f"  -> Skipping (starts at {current_file['start_prime']} > {limit})")
+            break
+
+        # Determine if we need to filter this file
+        needs_filtering = not next_file or next_file['start_prime'] > limit
+
+        if needs_filtering:
+            # This is the last file we need to process
+            # Check if the file actually contains primes beyond our limit
+            with open(current_file['path'], 'r') as f:
+                content = f.read()
+            lines = content.split('\n')
+
+            # Quick check: find last prime in file
+            last_prime_in_file = None
+            for line in reversed(lines):
+                primes = parse_primes_from_line(line, None)
+                if primes:
+                    last_prime_in_file = primes[-1]
+                    break
+
+            if last_prime_in_file and last_prime_in_file <= limit:
+                # All primes in file are within limit, copy completely
+                print(f"  -> Copying completely (all primes <= {limit})")
+                copy_primes_from_file(current_file['path'], all_primes, None)
+            else:
+                # File contains primes beyond limit, filter it
+                print(f"  -> Filtering (file contains primes beyond {limit})")
+                found_exact = copy_primes_from_file(current_file['path'], all_primes, limit)
+                if found_exact:
+                    print("  -> Found exact match, stopping early")
+
+            break  # Done processing
+        else:
+            # Next file is also within range, copy current file completely
+            print(f"  -> Copying completely (next file {next_file['filename']} starts at {next_file['start_prime']} < {limit})")
+            copy_primes_from_file(current_file['path'], all_primes, None)
+
+    # Check if we need to extend beyond cached data
+    folder_limit = int(os.path.basename(best_folder).replace('output-', ''))
+    if limit > folder_limit and all_primes:
+        max_cached = all_primes[-1]
+        if max_cached < limit:
+            print(f"Extending from {max_cached} to {limit}")
+            new_primes = generate_primes_in_range(max_cached, limit)
+            all_primes.extend(new_primes)
+
+    # Note: No need to sort or deduplicate!
+    # - Files are read sequentially in sorted order
+    # - Each file contains unique primes
+    # - parse_primes_from_line already filters by limit during reading
+    # This optimization saves O(n log n) time!
+
+    print(f"Total primes found: {len(all_primes)}")
+
+    # Save to new cache folder for this target
     save_primes_to_folder(limit, all_primes)
 
     return all_primes
 
+
+def is_prime_in_cache(num, folder_path):
+    """
+    Check if a number exists in the cached prime files using precise string matching
+    on the entire file content, as suggested by the user.
+    """
+    if not os.path.exists(folder_path):
+        return False
+
+    num_str = str(num)
+    files = [f for f in os.listdir(folder_path) if (f.startswith('Output') or f.startswith('output')) and f.endswith('.txt')]
+
+    for filename in files:
+        filepath = os.path.join(folder_path, filename)
+        with open(filepath, 'r') as f:
+            content = f.read()
+            # User-specified patterns for high-speed checking
+            if f',{num_str},' in content or f'| {num_str},' in content:
+                return True
+    return False
 
 def is_prime_hyperbolic_optimized(num):
     """
     Check if a single number is prime using cached data when beneficial.
 
     Strategy:
-    1. For small numbers (≤ 10,000), use direct hyperbolic check (very fast)
-    2. For large numbers:
-       - If we have cached primes up to sqrt(n), use trial division with cache
-       - Otherwise, use direct hyperbolic method
-
-    Args:
-        num: Number to check
-
-    Returns:
-        True if prime, False otherwise
+    1. For small numbers (≤ 10,000), use direct hyperbolic check (very fast).
+    2. Check if `num` is in a completed cache (fast string search).
+    3. For large numbers not in cache, use trial division if we have cached primes up to sqrt(n).
+    4. Otherwise, use direct hyperbolic method.
     """
     # Base cases
     if num <= 1:
@@ -403,11 +686,17 @@ def is_prime_hyperbolic_optimized(num):
         return is_prime_hyperbolic_core(num)
 
     # For larger numbers, try to use cached primes
-    sqrt_n = isqrt(num)
     largest_existing = find_largest_existing_limit()
 
+    # Fast path: check if `num` is in a cache that is supposed to contain it.
+    if largest_existing is not None and num <= largest_existing:
+        cached_folder = os.path.join(OUTPUT_ROOT, f'output-{largest_existing}')
+        return is_prime_in_cache(num, cached_folder)
+
+    # Slower path: for numbers larger than current cache
+    sqrt_n = isqrt(num)
     if largest_existing is not None and largest_existing >= sqrt_n:
-        # We have enough cached primes - use trial division
+        # We have enough cached primes for trial division
         cached_folder = os.path.join(OUTPUT_ROOT, f'output-{largest_existing}')
         primes = read_primes_from_folder(cached_folder)
 
@@ -707,92 +996,3 @@ def clear_all_cache():
         'action': 'cleared',
         'folders_removed': len(folders)
     }
-
-
-# ============================================================================
-# DEMONSTRATION
-# ============================================================================
-
-def demonstrate():
-    """Demonstration of optimized hyperbolic approach with caching"""
-    print('=' * 70)
-    print('OPTIMIZED HYPERBOLIC PRIME DETECTION WITH CACHING')
-    print('=' * 70)
-    print()
-
-    # Show cache status
-    stats = get_hyperbolic_cache_stats()
-    print('📊 Cache Status:')
-    print(f'   Cached folders: {stats["folders"]}')
-    print(f'   Largest limit: {stats["largest_limit"]:,}' if stats["largest_limit"] else '   No cache available')
-    print()
-
-    # Test 1: Generate primes with caching
-    print('TEST 1: Generate primes up to 100,000')
-    print('-' * 70)
-
-    import time
-    start = time.time()
-    primes = sieve_hyperbolic_optimized(100000)
-    elapsed = (time.time() - start) * 1000
-
-    print(f'Found {len(primes):,} primes in {elapsed:.2f}ms')
-    print(f'First 10: {primes[:10]}')
-    print(f'Last 10: {primes[-10:]}')
-    print(f'Verification: {len(primes) == 9592} (expected 9,592)')
-    print()
-
-    # Test 2: Check individual primes
-    print('TEST 2: Check individual numbers')
-    print('-' * 70)
-
-    test_numbers = [
-        (15485863, True, '1 millionth prime'),
-        (999983, True, 'largest prime < 1M'),
-        (15485864, False, 'composite number'),
-        (1000000, False, 'composite number'),
-    ]
-
-    for num, expected, desc in test_numbers:
-        start = time.time()
-        result = is_prime_hyperbolic_optimized(num)
-        elapsed = (time.time() - start) * 1000
-
-        status = '✓' if result == expected else '✗'
-        result_str = 'PRIME' if result else 'COMPOSITE'
-        print(f'{status} {num:>10,} ({desc})')
-        print(f'  Result: {result_str}, Time: {elapsed:.3f}ms')
-
-    print()
-
-    # Final cache stats
-    final_stats = get_hyperbolic_cache_stats()
-    print('📊 Final Cache Status:')
-    print(f'   Cached folders: {final_stats["folders"]}')
-    print(f'   Largest limit: {final_stats["largest_limit"]:,}' if final_stats["largest_limit"] else '   No cache available')
-    print()
-
-    # Verification table
-    print('Known Prime Counts for Verification:')
-    print('─' * 70)
-    print('Limit          | Expected Count | Status')
-    print('─' * 70)
-
-    known_counts = [
-        (100, 25),
-        (1000, 168),
-        (10000, 1229),
-        (100000, 9592),
-    ]
-
-    for limit_val, expected_count in known_counts:
-        actual_primes = [p for p in primes if p <= limit_val]
-        actual_count = len(actual_primes)
-        status = '✓ PASS' if actual_count == expected_count else '✗ FAIL'
-        print(f'{limit_val:>14,} | {expected_count:>14,} | {status} (actual: {actual_count:,})')
-
-    print('─' * 70)
-
-
-if __name__ == '__main__':
-    demonstrate()

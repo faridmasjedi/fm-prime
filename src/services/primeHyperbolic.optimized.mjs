@@ -170,6 +170,68 @@ export function divisionHyperbolic(numInput) {
 }
 
 /**
+ * Find all prime divisors of a number using the hyperbolic method.
+ * @param {string|number} numInput - The number to factorize.
+ * @returns {string[]} A list of all prime divisors as strings.
+ */
+export function getAllDivisionsHyperbolic(numInput) {
+    let num = BigInt(numInput);
+
+    if (num < 1n) {
+        throw new Error("Input must be a positive integer.");
+    }
+
+    if (num === 1n) {
+        return ['1'];
+    }
+
+    const factors = [];
+
+    // Handle factors of 2
+    while (num % 2n === 0n) {
+        factors.push('2');
+        num /= 2n;
+    }
+
+    // Handle factors of 3
+    while (num % 3n === 0n) {
+        factors.push('3');
+        num /= 3n;
+    }
+
+    // Handle factors of 5
+    while (num % 5n === 0n) {
+        factors.push('5');
+        num /= 5n;
+    }
+
+    while (num > 1n) {
+        // Use the optimized hyperbolic division to find the smallest prime factor
+        const divisorStr = divisionHyperbolic(num);
+        const divisor = BigInt(divisorStr);
+
+        // The divisor is the smallest prime factor of the current num
+        factors.push(divisorStr);
+
+        // If the divisor is the number itself, it's prime, and we are done
+        if (divisor === num) {
+            break;
+        }
+
+        // Divide the number by the found divisor and continue
+        num /= divisor;
+    }
+
+    return factors.sort((a, b) => {
+        const bigA = BigInt(a);
+        const bigB = BigInt(b);
+        if (bigA < bigB) return -1;
+        if (bigA > bigB) return 1;
+        return 0;
+    });
+}
+
+/**
  * Check if a number is prime using hyperbolic method (no caching)
  * @param {string|number} numInput - Number to check
  * @returns {boolean} True if prime
@@ -254,23 +316,162 @@ function generatePrimesInRange(start, limit) {
 }
 
 // ============================================================================
+// FILE-LEVEL GRANULAR CACHING
+// ============================================================================
+
+/**
+ * Find the best cache folder that contains files covering the target range
+ * @param {bigint} target - Target number to find primes up to
+ * @returns {string|null} - Path to best folder or null
+ */
+function findBestCacheFolderForTarget(target) {
+  if (!fsExistsSync(OUTPUT_ROOT)) return null;
+
+  const folders = fsReadDirSync(OUTPUT_ROOT)
+    .filter(f => f.startsWith('output-'))
+    .map(f => ({
+      name: f,
+      limit: BigInt(f.replace('output-', '')),
+      path: `${OUTPUT_ROOT}/${f}`
+    }))
+    .filter(f => {
+      // Check if folder has any files
+      if (!fsExistsSync(f.path)) return false;
+      const files = fsReadDirSync(f.path).filter(file => file.match(/^output\d+\.txt$/));
+      return files.length > 0;
+    });
+
+  if (folders.length === 0) return null;
+
+  // Find folder with limit >= target (smallest one that covers our range)
+  const covering = folders
+    .filter(f => f.limit >= target)
+    .sort((a, b) => (a.limit > b.limit ? 1 : -1));
+
+  if (covering.length > 0) {
+    return covering[0].path;
+  }
+
+  // If no folder covers target, return the largest one (we'll need to extend)
+  const largest = folders.sort((a, b) => (a.limit > b.limit ? -1 : 1))[0];
+  return largest ? largest.path : null;
+}
+
+/**
+ * Get file ranges in a folder by parsing filenames
+ * @param {string} folderPath - Path to cache folder
+ * @returns {Array<{filename: string, startPrime: bigint, path: string}>} - Sorted array of file info
+ */
+function getFileRangesInFolder(folderPath) {
+  if (!fsExistsSync(folderPath)) return [];
+
+  const files = fsReadDirSync(folderPath)
+    .filter(f => f.match(/^output(\d+)\.txt$/))
+    .map(f => {
+      const match = f.match(/^output(\d+)\.txt$/);
+      return {
+        filename: f,
+        startPrime: BigInt(match[1]),
+        path: `${folderPath}/${f}`
+      };
+    })
+    .sort((a, b) => (a.startPrime > b.startPrime ? 1 : -1));
+
+  return files;
+}
+
+// Compile regex once for reuse (performance optimization)
+const PRIME_LINE_REGEX = /\((\d+)\)\s*\|\s*(.+)/;
+
+/**
+ * Parse primes from a line of text
+ * @param {string} line - Line in format "(index) | prime1,prime2,..."
+ * @param {bigint|null} limit - Optional limit to filter primes
+ * @returns {bigint[]|null} - Array of primes or null if line is invalid
+ */
+function parsePrimesFromLine(line, limit = null) {
+  const trimmed = line.trim();
+  if (!trimmed) return null;
+
+  const match = trimmed.match(PRIME_LINE_REGEX);
+  if (!match) return null;
+
+  const primesStr = match[2];
+  const primeStrings = primesStr.split(',');
+  const primes = [];
+
+  for (let i = 0; i < primeStrings.length; i++) {
+    const str = primeStrings[i].trim();
+    if (!str) continue;
+
+    try {
+      const prime = BigInt(str);
+      if (limit === null || prime <= limit) {
+        primes.push(prime);
+      }
+      // Early termination if we exceeded limit
+      if (limit !== null && prime > limit) {
+        break;
+      }
+    } catch {
+      // Skip invalid numbers
+    }
+  }
+
+  return primes.length > 0 ? primes : null;
+}
+
+/**
+ * Copy all primes from a file into the allPrimes array
+ * @param {string} filePath - Path to file
+ * @param {bigint[]} allPrimes - Target array to append to
+ * @param {bigint|null} limit - Optional limit for filtering
+ * @returns {boolean} - True if found exact match (for early termination)
+ */
+function copyPrimesFromFile(filePath, allPrimes, limit = null) {
+  const content = fsReadFileSync(filePath, 'utf8');
+  const lines = content.split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    const primes = parsePrimesFromLine(lines[i], limit);
+    if (primes) {
+      // Direct array concatenation (faster than push with spread)
+      for (let j = 0; j < primes.length; j++) {
+        allPrimes.push(primes[j]);
+      }
+
+      // Check if we found exact match (for early termination)
+      if (limit !== null && primes[primes.length - 1] === limit) {
+        return true; // Found exact match
+      }
+    }
+  }
+
+  return false; // No exact match found
+}
+
+// ============================================================================
 // PUBLIC API - OPTIMIZED METHODS WITH CACHING
 // ============================================================================
 
 /**
- * **Main 15: Hyperbolic Sieve with Caching**
+ * **Main 15: Hyperbolic Sieve with File-Level Granular Caching**
  *
- * Generates all primes up to a limit using cached data when available.
+ * Instead of loading entire folders into memory, this function:
+ * 1. Finds the best cache folder that covers the target range
+ * 2. Copies complete files when their entire range is below target
+ * 3. Only filters/processes the last file that crosses the target
  *
- * Strategy:
- * 1. Check if exact folder exists → load and return
- * 2. Find largest cache < limit → load and extend from there
- * 3. Find largest cache > limit → load and filter
- * 4. No cache → generate from scratch
- * 5. Always save results for future use
+ * Algorithm:
+ * - For target 7931507 in folder output-10000000:
+ *   - Copy output2.txt completely (< 1903483)
+ *   - Copy output1903483.txt completely (< 3850199)
+ *   - Copy output3850199.txt completely (< 5869091)
+ *   - Filter output5869091.txt to include only primes <= 7931507
+ *   - Skip output7931513.txt (all primes > target)
  *
- * @param {string} limitInput - Upper limit for prime generation
- * @returns {bigint[]} - Array of all primes up to limit
+ * @param {string|number|bigint} limitInput - Find all primes up to this number
+ * @returns {bigint[]} - Array of primes up to limit
  */
 export function sieveHyperbolicOptimized(limitInput) {
   const limit = BigInt(limitInput);
@@ -279,40 +480,152 @@ export function sieveHyperbolicOptimized(limitInput) {
   // Check if exact folder exists
   const exactFolder = numFolderExist(limit.toString());
   if (exactFolder) {
+    console.log(`Found exact cache folder: ${exactFolder}`);
     return readPrimesFromFolder(exactFolder);
   }
 
-  // Find largest existing cache
-  const largestExisting = findLargestExistingLimit();
-
-  let startFrom = 2n;
-  let cachedPrimes = [];
-
-  if (largestExisting !== null && largestExisting < limit) {
-    // Use existing cache and continue from there
-    const cachedFolder = `${OUTPUT_ROOT}/output-${largestExisting}`;
-    cachedPrimes = readPrimesFromFolder(cachedFolder);
-    startFrom = largestExisting + 1n;
-  } else if (largestExisting !== null && largestExisting >= limit) {
-    // Requested limit is smaller - just filter existing
-    const cachedFolder = `${OUTPUT_ROOT}/output-${largestExisting}`;
-    const allPrimes = readPrimesFromFolder(cachedFolder);
-    const filteredPrimes = allPrimes.filter(p => p <= limit);
-
-    // Save the filtered results
-    savePrimesToFolder(limit, filteredPrimes);
-    return filteredPrimes;
+  // Find best cache folder
+  const bestFolder = findBestCacheFolderForTarget(limit);
+  if (!bestFolder) {
+    console.log('No cache folder found, generating from scratch');
+    // Generate from scratch
+    const newPrimes = generatePrimesInRange(1n, limit);
+    savePrimesToFolder(limit, newPrimes);
+    return newPrimes;
   }
 
-  // Generate new primes
-  const newPrimes = generatePrimesInRange(startFrom - 1n, limit);
-  const allPrimes = [...cachedPrimes, ...newPrimes];
+  console.log(`Using cache folder: ${bestFolder}`);
 
-  // Save to cache
+  // Get files in folder sorted by start prime
+  const files = getFileRangesInFolder(bestFolder);
+  if (files.length === 0) {
+    console.log('No files found in cache folder');
+    const newPrimes = generatePrimesInRange(1n, limit);
+    savePrimesToFolder(limit, newPrimes);
+    return newPrimes;
+  }
+
+  console.log(`Found ${files.length} cache files`);
+
+  // Process files
+  let allPrimes = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const currentFile = files[i];
+    const nextFile = i < files.length - 1 ? files[i + 1] : null;
+
+    console.log(`Processing file: ${currentFile.filename} (starts at ${currentFile.startPrime})`);
+
+    // Skip files that start beyond target
+    if (currentFile.startPrime > limit) {
+      console.log(`  -> Skipping (starts at ${currentFile.startPrime} > ${limit})`);
+      break;
+    }
+
+    // Determine if we need to filter this file
+    const needsFiltering = !nextFile || nextFile.startPrime > limit;
+
+    if (needsFiltering) {
+      // This is the last file we need to process
+      // Check if the file actually contains primes beyond our limit
+      const content = fsReadFileSync(currentFile.path, 'utf8');
+      const lines = content.split('\n');
+
+      // Quick check: find last prime in file
+      let lastPrimeInFile = null;
+      for (let j = lines.length - 1; j >= 0; j--) {
+        const primes = parsePrimesFromLine(lines[j], null);
+        if (primes && primes.length > 0) {
+          lastPrimeInFile = primes[primes.length - 1];
+          break;
+        }
+      }
+
+      if (lastPrimeInFile && lastPrimeInFile <= limit) {
+        // All primes in file are within limit, copy completely
+        console.log(`  -> Copying completely (all primes <= ${limit})`);
+        copyPrimesFromFile(currentFile.path, allPrimes, null);
+      } else {
+        // File contains primes beyond limit, filter it
+        console.log(`  -> Filtering (file contains primes beyond ${limit})`);
+        const foundExact = copyPrimesFromFile(currentFile.path, allPrimes, limit);
+        if (foundExact) {
+          console.log(`  -> Found exact match, stopping early`);
+        }
+      }
+
+      break; // Done processing
+    } else {
+      // Next file is also within range, copy current file completely
+      console.log(`  -> Copying completely (next file ${nextFile.filename} starts at ${nextFile.startPrime} < ${limit})`);
+      copyPrimesFromFile(currentFile.path, allPrimes, null);
+    }
+  }
+
+  // Check if we need to extend beyond cached data
+  const folderLimit = BigInt(bestFolder.split('-').pop());
+  if (limit > folderLimit && allPrimes.length > 0) {
+    const maxCached = allPrimes[allPrimes.length - 1];
+    if (maxCached < limit) {
+      console.log(`Extending from ${maxCached} to ${limit}`);
+      const newPrimes = generatePrimesInRange(maxCached, limit);
+
+      // Direct concatenation (faster than chunked push for moderate arrays)
+      if (newPrimes.length < 50000) {
+        allPrimes.push(...newPrimes);
+      } else {
+        // Use chunked push only for very large arrays to avoid stack overflow
+        const chunkSize = 10000;
+        for (let i = 0; i < newPrimes.length; i += chunkSize) {
+          const chunk = newPrimes.slice(i, i + chunkSize);
+          allPrimes.push(...chunk);
+        }
+      }
+    }
+  }
+
+  // Note: No need to sort or deduplicate!
+  // - Files are read sequentially in sorted order
+  // - Each file contains unique primes
+  // - parsePrimesFromLine already filters by limit during reading
+  // This optimization saves O(n log n) time!
+
+  console.log(`Total primes found: ${allPrimes.length}`);
+
+  // Save to new cache folder for this target
   savePrimesToFolder(limit, allPrimes);
 
   return allPrimes;
 }
+
+/**
+ * Check if a number exists in the cached prime files using precise string matching.
+ * This is much faster than loading all primes into memory.
+ * @param {string|number|bigint} num - The number to check.
+ * @param {string} folderPath - Path to the directory containing cache files.
+ * @returns {boolean} - True if the number is found in the cache.
+ */
+function isPrimeInCache(num, folderPath) {
+  if (!fsExistsSync(folderPath)) {
+    return false;
+  }
+
+  const numStr = num.toString();
+  const files = fsReadDirSync(folderPath).filter(f => f.match(/^(output|Output).*\.txt$/));
+
+  for (const filename of files) {
+    const filepath = `${folderPath}/${filename}`;
+    const content = fsReadFileSync(filepath, 'utf8');
+
+    // User-specified patterns for high-speed checking
+    if (content.includes(`,${numStr},`) || content.includes(`| ${numStr},`)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 
 /**
  * **Main 16: Hyperbolic Prime Check with Intelligent Caching**
@@ -320,10 +633,10 @@ export function sieveHyperbolicOptimized(limitInput) {
  * Checks if a single number is prime using cached data when beneficial.
  *
  * Strategy:
- * 1. For small numbers (≤ 10,000), use direct hyperbolic check (very fast)
- * 2. For large numbers:
- *    - If we have cached primes up to sqrt(n), use trial division with cache
- *    - Otherwise, use direct hyperbolic method
+ * 1. For small numbers (≤ 10,000), use direct hyperbolic check (very fast).
+ * 2. Check if `num` is in a completed cache (fast string search).
+ * 3. For large numbers not in cache, use trial division if we have cached primes up to sqrt(n).
+ * 4. Otherwise, use direct hyperbolic method.
  *
  * @param {string} numInput - Number to check
  * @returns {boolean} - True if prime, false otherwise
@@ -342,11 +655,18 @@ export function isPrimeHyperbolicOptimized(numInput) {
   }
 
   // For larger numbers, try to use cached primes
-  const sqrtN = isqrt(num);
   const largestExisting = findLargestExistingLimit();
 
+  // Fast path: check if `num` is in a cache that is supposed to contain it.
+  if (largestExisting !== null && num <= largestExisting) {
+    const cachedFolder = `${OUTPUT_ROOT}/output-${largestExisting}`;
+    return isPrimeInCache(num, cachedFolder);
+  }
+
+  // Slower path: for numbers larger than current cache
+  const sqrtN = isqrt(num);
   if (largestExisting !== null && largestExisting >= sqrtN) {
-    // We have enough cached primes - use trial division
+    // We have enough cached primes for trial division
     const cachedFolder = `${OUTPUT_ROOT}/output-${largestExisting}`;
     const primes = readPrimesFromFolder(cachedFolder);
 

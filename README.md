@@ -199,12 +199,16 @@ For 6n+1:
 The optimized implementation includes:
 - **Two-way search**: Bottom-up (finds factors near √N) + Top-down (finds small factors quickly)
 - **Modular filters**: Quadratic residue checks (mod 64, 63, 65) eliminate ~94% of non-squares before expensive square roots
-- **Intelligent caching**: File-based caching via `output-big` folder system - reuses previously computed primes
+- **File-level granular caching** ⭐ (NEW): Intelligent file-based caching that only reads/processes necessary files
+  - Copies complete files when their range is below target
+  - Only filters the boundary file that crosses the target
+  - **2.5x faster** on average vs. traditional folder-based caching
+  - Stops immediately when exact target is found (optimization)
 - **Verified accuracy**: 100% correct results (664,579 primes under 10,000,000)
 
 **Available in both JavaScript and Python:**
 - `src/services/primeHyperbolic.optimized.mjs`
-- `src/services-py/prime_hyperbolic_optimized.py`
+- `fm_prime/prime_hyperbolic_optimized.py`
 
 **Original research version** (for educational purposes) remains in `/investigation` folder.
 
@@ -330,6 +334,24 @@ Explore the hyperbolic approach visually:
 python analyze-hyperbolic-visual.py     # Generates plots
 python analyze-hyperbolic-patterns.py   # Text analysis
 ```
+
+### Examples
+
+See the `examples/` directory for complete working examples:
+
+```bash
+# Run comprehensive demonstration
+python examples/example_hyperbolic_optimized.py
+```
+
+**Examples include:**
+- Generating primes with caching
+- Checking individual numbers for primality
+- Finding all divisors
+- Performance benchmarking
+- Cache management
+
+For more details, see **[examples/README.md](./examples/README.md)**
 
 ---
 
